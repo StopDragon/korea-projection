@@ -169,7 +169,7 @@ check "  다시 부팅해도 이미 있으면 아무것도 안 함" '! grep -q -
 rm -rf $X/hd/mods/wireless-carplay-aa; rm -f $X/calls; as > $X/out
 check "차주가 모드를 지운 뒤에는 다시 설치하지 않음 (mod.tried)" '! grep -q "engine install" $X/calls'
 asreset; mkdir -p $NM; echo official > $NM/car.json; as > $X/out
-check "HMG-API에 이 차 지도가 이미 있으면(공식판 등) 덮어쓰지 않음" '[ "$(cat $NM/car.json)" = official ] && ! grep -q verify-map $X/calls && [ ! -f $X/bk/map.ours ]'
+check "HMG-API에 이 차 지도가 이미 있으면(공식판 등) 덮어쓰지 않음" '[ "$(cat $NM/car.json)" = official ] && ! grep -q verify-map $X/calls && ! grep -q "^kia/niro/" $X/bk/map.ours 2>/dev/null'
 asreset; mkdir -p $X/hd/mods/wireless-carplay-aa; echo '{}' > $X/hd/mods/wireless-carplay-aa/mod.json; : > $X/hd/mods/wireless-carplay-aa/.disabled; as > $X/out
 check "모드가 이미 있으면(꺼 둔 것 포함) 설치·적용 안 함" '! grep -q "engine install" $X/calls && ! grep -q "engine apply" $X/calls && [ -f $X/hd/mods/wireless-carplay-aa/.disabled ]'
 asreset; printf '%s\n' "$PLAN_OK" "change   /system/app/X.apk [other-mod] -> 1   [restart the app]" > $X/plan; as > $X/out
@@ -208,6 +208,25 @@ asreset; rm -rf $X/hd/maps; as > $X/out
 check "HMG-API가 없으면(/data/hmgapi/maps 없음) 아무것도 안 함" '[ ! -s $X/calls ] && grep -q "HMG-API가 없음" $X/out'
 asreset; echo DEPEHEV.USA.0000.V039.001.260902 > $T/product; as > $X/out; rm -f $T/product
 check "확인된 차가 아니면 아무것도 안 함" '[ ! -s $X/calls ] && [ ! -d $NM ]'
+SM=$X/hd/maps/hyundai/sonata/kor/260902
+asreset; echo DN822HEV.KOR.0000.V039.001.260902 > $T/product; as > $X/out; rm -f $T/product
+check "쏘나타(DN822HEV.KOR 260902): 쏘나타 지도를 넣고 지도 확인 한 번, 무선 모드 설치" '[ "$(ls $SM | wc -l | tr -d " ")" = 12 ] && [ "$(grep -c verify-map $X/calls)" = 1 ] && grep -q "engine install" $X/calls'
+check "  넣은 쏘나타 지도가 패키지 것과 같음" 'diff -r $SM $T/app/hmgapi/maps/hyundai/sonata/kor/260902 >/dev/null'
+# 확인된 차 판별 (case 패턴에 변수의 |를 쓰지 않고 목록을 하나씩 본다)
+ic() { (HOTSPOT_LIB=1 BB=$T/bin/bb sh -c '. '$T'/app/svc/hotspot.sh; is_car "$1"' _ "$1"); }
+check "is_car: 니로·쏘나타 260902는 확인된 차" 'ic DEPEHEV.KOR.0000.V039.001.260902 && ic DN822HEV.KOR.0000.V039.001.260902'
+check "  지역·펌웨어·모델이 다르면 아님" '! ic DN822HEV.USA.0000.V039.001.260902 && ! ic DN822HEV.KOR.0000.V039.001.260101 && ! ic DN8HEV.KOR.0000.V039.001.260902 && ! ic DN822HEV.KOR.260902 && ! ic ""'
+# 지도 확인 시점: 지난번 확인 실패나 다른 차 지도 실패가 이 차 설정을 막거나 건너뛰게 하지 않는다
+asreset; touch $X/vm_fail; as > $X/out; rm -f $X/vm_fail $X/calls; as > $X/out
+check "지도 확인 실패 뒤 다음 부팅: 지도가 이미 있어도 다시 확인하고 통과하면 모드 설치" 'grep -qx "hmgapid engine verify-map" $X/calls && grep -q "engine install" $X/calls && grep -qx "kia/niro/kor/260902" $X/bk/map.checked'
+rm -f $X/calls; as > $X/out
+check "  확인을 통과한 뒤에는 다시 확인하지 않음" '! grep -q verify-map $X/calls'
+asreset; mkdir -p $NM; cp $T/app/hmgapi/maps/kia/niro/kor/260902/*.json $NM/; echo kia/niro/kor/260902 > $X/bk/map.ours; mkdir -p $X/hd/mods/wireless-carplay-aa; echo '{}' > $X/hd/mods/wireless-carplay-aa/mod.json; as > $X/out
+check "1.5.1에서 올린 차(map.checked 없음): 한 번 다시 확인, 재시작 안내는 안 함" 'grep -qx "hmgapid engine verify-map" $X/calls && [ -f $X/bk/map.checked ] && [ ! -f $T/toast ]'
+asreset; rm -rf $X/kh; mkdir -p $X/kh; cp -R $T/app/hmgapi/. $X/kh/; mkdir -p $X/kh/maps/hyundai/aaa/kor/260101; echo '{}' > $X/kh/maps/hyundai/aaa/kor/260101/car.json; chmod 000 $X/kh/maps/hyundai/aaa/kor/260101/car.json
+(PATH=$X/bin:$T/bin:/usr/bin:/bin:/sbin HOTSPOT_LIB=1 BB=$T/bin/bb W=$X/w BK=$X/bk HMGDATA=$X/hd KP_HMG=$X/kh sh -c '. '$T'/app/svc/hotspot.sh; export PATH='$X'/bin:'$T'/bin:/usr/bin:/bin:/sbin; setup_hmgapi') > $X/out
+chmod 644 $X/kh/maps/hyundai/aaa/kor/260101/car.json; rm -rf $X/kh
+check "다른 차 지도를 넣지 못해도 이 차는 지도 확인·모드 설치, 끝 안내는 안 함" 'grep -q "지도 넣기 실패: hyundai/aaa" $X/out && grep -qx "hmgapid engine verify-map" $X/calls && grep -q "engine install" $X/calls && ! grep -q "마쳤습니다" $T/toast 2>/dev/null'
 
 # preun: 우리가 설치한 모드만 정리
 PU=$T/pu; mkdir -p $PU/bk

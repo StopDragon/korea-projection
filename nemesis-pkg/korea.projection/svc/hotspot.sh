@@ -1,5 +1,6 @@
 #!/system/bin/sh
-# korea.projection: the wireless CarPlay access point on Korean head units (tested: Niro DEPEHEV.KOR 260902).
+# korea.projection: the wireless CarPlay access point on Korean head units (tested: Niro DEPEHEV.KOR 260902;
+# testing: Sonata DN822HEV.KOR 260902).
 # There the stock hotspot call (setWifiApEnabledForConnectivity) does nothing, but the stock
 # hostapd on wlan0 (nl80211) works. NEMESIS's svcmgr starts this at boot (mode=restart); it
 # waits for Android, starts hostapd + dnsmasq with the CarPlay network from softap.conf, then
@@ -16,8 +17,16 @@ AP_IP=192.168.43.1
 # busybox ps cuts command lines near 80 columns: match the start of dnsmasq's (netd starts it the
 # same way, but the stock hotspot never runs on this car)
 DNSMASQ='dnsmasq --keep-in-foreground --no-resolv --no-poll'
-# the only car this was tested on; anything else: log and idle
-CARS='DEPEHEV.KOR.*.260902'
+# 확인된 차(<모델>.<지역>:<펌웨어>, 띄어 쓰기로 구분): 니로 하이브리드, 쏘나타 하이브리드(DN8). 그 밖의 차는 기록만 하고 대기
+CARS='DEPEHEV.KOR:260902 DN822HEV.KOR:260902'
+# ro.build.product가 확인된 차인가 (<모델>.<지역>.<아무거나>.<펌웨어>).
+# case 패턴에 변수로 넣은 |는 갈래로 풀리지 않아 하나씩 본다. 목록에 *가 없어 for의 파일 이름 풀이도 일어나지 않는다
+is_car() {
+  for _car in $CARS; do
+    case "$1" in "${_car%%:*}".*."${_car#*:}") return 0 ;; esac
+  done
+  return 1
+}
 OLDPKG=${OLDPKG:-/data/nemesis/apps/niro.carplay.hotspot}
 APP=${APP:-/data/nemesis/apps/korea.projection}
 
@@ -272,36 +281,48 @@ plan_only_mod() {
   return $_bad
 }
 setup_hmgapi() {
-  case "$(getprop ro.build.product 2>/dev/null)" in $CARS) ;; *) return 0 ;; esac
+  is_car "$(getprop ro.build.product 2>/dev/null)" || return 0
   [ -d $HMGDATA/maps ] || { log "자동 설정 건너뜀: HMG-API가 없음"; return 0; }
   $BB mkdir -p $BK
   # _fail: 안내 토스트를 이미 띄움 → 마지막 "설정을 마쳤습니다"로 덮지 않는다
   _restart=0; _fail=0
   # 지도: 차마다 임시 폴더에 다 복사한 뒤 한 번에 옮긴다(도중에 전원이 꺼져 반쪽 지도가 남지 않게).
   # 임시 폴더는 maps/.kp-tmp: HMG-API는 maps/<제조사>/<차종>/<지역>/<펌웨어>/만 읽으므로 반쪽 car.json을 보지 않는다.
-  # 지도 확인(verify-map)은 이 차의 지도(펌웨어와 모델 코드가 같은 것)를 넣었을 때만 한다.
+  # 지도 확인(verify-map)은 이 차의 지도(펌웨어와 모델 코드가 같은 것)를 넣었을 때, 그리고 우리가 넣은 이 차
+  # 지도가 아직 확인을 통과하지 못했을 때(지난번 실패, 확인 전에 꺼짐: map.checked에 없음) 한다.
+  # 다른 차 지도를 넣지 못한 것은 이 차 설정을 막지 않는다(_mapbad는 이 차 지도만). 안내만 한다(_fail).
   # map.ours는 기록용이다: 지도는 HMG-API의 다른 모드도 쓰므로 패키지를 지워도 남긴다.
-  _mapbad=0; _mine=0
+  _mapbad=0; _mine=0; _recheck=0; _myrel=
   _prod=$(getprop ro.build.product 2>/dev/null)
   _tmp=$HMGDATA/maps/.kp-tmp
   for _c in $KP_HMG/maps/*/*/*/*/car.json; do
     [ -f "$_c" ] || continue
     _d=${_c%/car.json}; _rel=${_d#$KP_HMG/maps/}
-    [ -f $HMGDATA/maps/$_rel/car.json ] && continue
+    _own=0
+    [ "${_rel##*/}" = "${_prod##*.}" ] && $BB grep -q "\"${_prod%%.*}" $_c && { _own=1; _myrel=$_rel; }
+    if [ -f $HMGDATA/maps/$_rel/car.json ]; then
+      [ $_own = 1 ] && has_line "$_rel" $BK/map.ours && ! has_line "$_rel" $BK/map.checked && _recheck=1
+      continue
+    fi
     $BB rm -rf $_tmp
     if $BB mkdir -p $_tmp ${HMGDATA}/maps/${_rel%/*} && $BB cp $_d/*.json $_tmp/ && $BB chmod -R 700 $_tmp \
         && $BB rm -rf $HMGDATA/maps/$_rel && $BB mv $_tmp $HMGDATA/maps/$_rel; then
       echo "$_rel" >> $BK/map.ours
       log "지도 넣음: $_rel"
-      [ "${_rel##*/}" = "${_prod##*.}" ] && $BB grep -q "\"${_prod%%.*}" $_c && _mine=1
+      [ $_own = 1 ] && _mine=1
     else
       $BB rm -rf $_tmp
-      log "지도 넣기 실패: $_rel"; _fail=1; _mapbad=1
+      log "지도 넣기 실패: $_rel"; _fail=1
+      [ $_own = 1 ] && _mapbad=1
     fi
   done
-  if [ $_mine = 1 ] && [ $_mapbad = 0 ]; then
+  if { [ $_mine = 1 ] || [ $_recheck = 1 ]; } && [ $_mapbad = 0 ]; then
     if hmgapid engine verify-map > $W/verify-map.txt 2>&1; then
-      log "지도 확인 통과 (다음 시작부터 훅 켜짐)"; _restart=1
+      echo "$_myrel" >> $BK/map.checked
+      # 다시 확인만 한 것(1.5.1에서 올린 차 등)은 이미 켜져 있을 수 있어 재시작 안내를 하지 않는다.
+      # 모드를 이번에 적용하면 아래에서 안내한다.
+      if [ $_mine = 1 ]; then log "지도 확인 통과 (다음 시작부터 훅 켜짐)"; _restart=1
+      else log "지도 다시 확인 통과: $_myrel"; fi
     else
       log "지도 확인 실패 ($W/verify-map.txt)"; _fail=1; _mapbad=1
       toast "Korea Projection: HMG-API 지도 확인에 실패했습니다. Launch에서 상태를 확인해 주세요."
@@ -452,13 +473,11 @@ main() {
     fix_perms &
     echo "$! $(cat $BOOT_ID 2>/dev/null)" > $W/fix.pid
   fi
-  case "$prod" in
-    $CARS) ;;
-    *)
-      log "시작 안 함: $prod 는 확인된 차가 아님 ($CARS)"
-      # mode=restart: idle instead of exiting, so svcmgr doesn't count deaths
-      while true; do sleep 3600; done ;;
-  esac
+  if ! is_car "$prod"; then
+    log "시작 안 함: $prod 는 확인된 차가 아님 ($CARS)"
+    # mode=restart: idle instead of exiting, so svcmgr doesn't count deaths
+    while true; do sleep 3600; done
+  fi
   trap 'stop_all; log "멈춤"; exit 0' TERM INT HUP
   # the package's earlier name runs its own hostapd: wait until it's uninstalled, then start
   if [ -d $OLDPKG ]; then

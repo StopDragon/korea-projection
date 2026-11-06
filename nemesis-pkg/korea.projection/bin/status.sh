@@ -39,7 +39,7 @@ report() {
   echo "- targetdir (NEMESIS models): $(getprop ro.mobis.targetdir)"
   echo "- onebin: $(getprop ro.mobis.onebindir)"
   echo "- 이 패키지 버전: $(pver $APP/NEMESIS.data)"
-  case "$prod" in $CARS) echo "- 확인된 차: 예" ;; *) echo "- 확인된 차: 아니요 (서비스가 대기만 함, 확인된 차: $CARS)" ;; esac
+  if is_car "$prod"; then echo "- 확인된 차: 예"; else echo "- 확인된 차: 아니요 (서비스가 대기만 함, 확인된 차: $CARS)"; fi
   echo "- NEMESIS: $(nemesis version 2>/dev/null)"
   # 따옴표 없이: 두 줄이 한 줄로 합쳐진다
   echo "- HMG-API:" $($BB grep -E '^(version|build) ' /data/hmgapi/installed.txt 2>/dev/null)
@@ -134,7 +134,7 @@ status_kv() {
   echo "product=$_prod"
   echo "targetdir=$(getprop ro.mobis.targetdir)"
   echo "pkgver=$(pver $APP/NEMESIS.data)"
-  case "$_prod" in $CARS) echo "tested=yes" ;; *) echo "tested=no" ;; esac
+  if is_car "$_prod"; then echo "tested=yes"; else echo "tested=no"; fi
   echo "hmgapi="$($BB grep -E '^(version|build) ' /data/hmgapi/installed.txt 2>/dev/null)
   echo "nemesis=$(nemesis version 2>/dev/null)"
   echo "wp=$(yesno [ -d /data/nemesis/apps/wireless.projection ])"
@@ -191,7 +191,7 @@ m="$m. 리포트를 USB에 저장했습니다(korea-projection-report.md)."
 # 지원 목록에 없는 차이거나 HMG-API 훅이 켜져 있지 않으면, 새 차 추가에 필요한 HMG-API Car Report도
 # 뒤에서 만들어 USB에 저장한다(1분쯤, 화면은 기다리지 않음). 끝나면 carreport.sh가 토스트로 알린다.
 _need=0
-case "$(getprop ro.build.product)" in $CARS) ;; *) _need=1 ;; esac
+is_car "$(getprop ro.build.product)" || _need=1
 _hk=$(hooks_state); [ "${_hk%% *}" = on ] || _need=1
 if [ $_need = 1 ] && command -v hmgapid >/dev/null 2>&1 && [ -f $APP/bin/carreport.sh ]; then
   W=$W $BB setsid sh $APP/bin/carreport.sh </dev/null >/dev/null 2>&1 &
