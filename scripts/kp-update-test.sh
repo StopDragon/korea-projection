@@ -9,6 +9,7 @@
 # 비밀번호, SSID, 휴대폰 이름은 어디에도 쓰지 않는다.
 export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin:/data/nemesis/bin
 BB=${BB:-/system/bin/busybox}
+[ -x "$BB" ] || BB=${APPS:-/data/nemesis/apps}/korea.projection/bin/busybox
 U=${U:-/storage/usb0}
 D=${D:-/data/local/tmp/kp-test7}
 # 스크립트도 헤드유닛에 복사해서 거기서 돈다: 도중에 USB가 떨어져도 셸이 스크립트를 계속 읽을 수 있게
