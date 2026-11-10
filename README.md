@@ -104,9 +104,9 @@
 
 | 제품 | 상태 | 구매 |
 |---|---|---|
-| ipTIME A3000MINI | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izqnJc9AJg) |
-| TP-Link Archer T3U | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izqs0SMtaK) |
-| 리버네트워크 NEXI NX-AC1300 | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izq0opYmQe) |
+| ipTIME A3000MINI | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izqnJc9AJg](https://link.coupang.com/a/izqnJc9AJg) |
+| TP-Link Archer T3U | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izqs0SMtaK](https://link.coupang.com/a/izqs0SMtaK) |
+| 리버네트워크 NEXI NX-AC1300 | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izq0opYmQe](https://link.coupang.com/a/izq0opYmQe) |
 
 - **5GHz를 지원하는 듀얼밴드 동글이어야 합니다.** 이 패키지는 5GHz 핫스팟만 씁니다. "N150", "N300"처럼 2.4GHz만 되는 동글은 쓸 수 없습니다.
 - 세 제품 모두 Realtek RTL8812BU 칩을 씁니다. 같은 모델명이라도 출시 시기에 따라 칩이 바뀔 수 있고, 칩이 다르면 동작하지 않을 수 있습니다.
