@@ -102,14 +102,14 @@
 
 > ⚠️ **지금 판(1.7.x)은 동글을 쓰지 않습니다.** 동글을 꽂아도 무선 카플레이·안드로이드 오토가 켜지지 않습니다. 아래는 1.8.0에서 지원할 예정인 동글이며, **아직 차에서 확인하지 않았습니다.** 1.8.0이 나오고 차에서 확인되면 이 표에 ✅로 표시합니다.
 
-| 제품 | 칩 | 크기 | 상태 | 구매 |
-|---|---|---|---|---|
-| ipTIME A3000MINI | Realtek RTL8812BU (Wi-Fi 5, 듀얼밴드) | 작음 | 🧪 1.8.0 준비 중 | [쿠팡](https://link.coupang.com/a/izqnJc9AJg) |
-| TP-Link Archer T3U | Realtek RTL8812BU (Wi-Fi 5, 듀얼밴드) | 작음 | 🧪 1.8.0 준비 중 | [쿠팡](https://link.coupang.com/a/izqs0SMtaK) |
-| 리버네트워크 NEXI NX-AC1300 | Realtek RTL8812BU (Wi-Fi 5, 듀얼밴드) | 작음 | 🧪 1.8.0 준비 중 | [쿠팡](https://link.coupang.com/a/izq0opYmQe) |
+| 제품 | 상태 | 구매 |
+|---|---|---|
+| ipTIME A3000MINI | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izqnJc9AJg) |
+| TP-Link Archer T3U | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izqs0SMtaK) |
+| 리버네트워크 NEXI NX-AC1300 | 🧪 1.8.0 준비 중 | [구매하기](https://link.coupang.com/a/izq0opYmQe) |
 
 - **5GHz를 지원하는 듀얼밴드 동글이어야 합니다.** 이 패키지는 5GHz 핫스팟만 씁니다. "N150", "N300"처럼 2.4GHz만 되는 동글은 쓸 수 없습니다.
-- 같은 모델명이라도 출시 시기에 따라 칩이 바뀔 수 있습니다. 위 표의 칩과 다르면 동작하지 않을 수 있습니다.
+- 세 제품 모두 Realtek RTL8812BU 칩을 씁니다. 같은 모델명이라도 출시 시기에 따라 칩이 바뀔 수 있고, 칩이 다르면 동작하지 않을 수 있습니다.
 
 > 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
 
