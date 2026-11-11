@@ -6,8 +6,10 @@ body:
   - type: markdown
     attributes:
       value: |
+        **Launch 화면 제목의 버전이 [최신 릴리스](https://github.com/StopDragon/korea-projection/releases/latest)보다 낮으면 먼저 업데이트해 주세요.**
+
         같은 차종의 제보는 올리면 **자동으로 그 차종 이슈에 모입니다.** 아래 칸만 채워 주세요.
-        제보 파일은 USB `KoreaProjection-report` 폴더의 파일만 올려 주세요. `4-debug-private.txt`·`KoreaProjection-private` 폴더(운행 기록), 비밀번호·차대번호·전화번호·폰 이름은 **올리지 마세요.** ([제보 가이드](https://github.com/StopDragon/korea-projection/blob/main/docs/car-report-guide.md))
+        제보 파일은 USB를 꽂고 Launch 화면의 **[제보 파일 만들기]**로 만든 `KoreaProjection-report` 폴더의 파일만 올려 주세요. 다른 도구의 진단 묶음에는 블루투스 주소·기기 이름이 들어갈 수 있습니다. `4-debug-private.txt`·`KoreaProjection-private` 폴더(운행 기록), 비밀번호·차대번호·전화번호·폰 이름은 **올리지 마세요.** ([제보 가이드](https://github.com/StopDragon/korea-projection/blob/main/docs/car-report-guide.md))
   - type: input
     id: car
     attributes:
@@ -49,40 +51,43 @@ body:
     attributes:
       label: Launch 화면 맨 위 문구
       description: 색 띠 안의 문구를 그대로 적어 주세요. 노란 "알림" 줄이 있으면 그것도 함께 적어 주세요
-      placeholder: "예: 무선 카플레이 준비됨. 아이폰을 연결해 보세요."
+      placeholder: "예: 무선 카플레이 준비됨. 아이폰은 설정 → 일반 → CarPlay에서 연결하세요."
   - type: dropdown
     id: carplay
     attributes:
       label: 무선 카플레이
       options:
+        - 이 폰은 안 씀
         - 연결됨
         - 아이폰에 무선 연결 제안이 안 뜸
         - 제안은 뜨지만 연결이 안 됨
         - 연결되지만 자주 끊김
-        - 아이폰을 쓰지 않음
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: aa
     attributes:
       label: 무선 안드로이드 오토
       description: 처음 연결할 때는 내비와 폰 양쪽에서 블루투스 등록을 지우고 새로 등록한 뒤, 내비의 "무선 Android Auto 사용" 안내에서 "사용"을 눌러 주세요
       options:
+        - 이 폰은 안 씀
         - 연결됨
         - 내비에 "무선 Android Auto" 안내는 뜨지만 연결이 안 됨
         - 블루투스(전화)만 붙고 안드로이드 오토는 안 뜸
-        - 안드로이드 폰을 쓰지 않음
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: cluster
     attributes:
       label: 계기판·HUD 길안내
+      description: 지도 앱이 안내를 보낼 때만 나옵니다. 주행 중에 확인해 주세요. 순정 내비와 똑같지 않을 수 있습니다. 다르게 나온 곳은 지도 앱 이름과 함께 적어 주세요
       options:
+        - 써 보지 않음/모름
         - 회전·차로 안내가 나옴
         - 일부만 나옴(직진만, 화살표가 이상함 등)
         - 안 나옴
-        - 써 보지 않음
+    validations:
+      required: true
   - type: checkboxes
     id: apps
     attributes:
@@ -103,7 +108,7 @@ body:
     id: files
     attributes:
       label: 제보 파일 (1-report.md, 2-car-report.json, 3-log.txt)
-      description: USB의 KoreaProjection-report 폴더 안 파일을 이 칸에 끌어다 놓아 주세요. 파일 이름이 이 칸에 나타나면 성공입니다. 4-debug-private.txt는 넣지 마세요
+      description: USB를 꽂고 Launch 화면의 [제보 파일 만들기]를 누르고, 완료 문구가 뜨면 USB를 빼세요. USB의 KoreaProjection-report 폴더 안 파일을 이 칸에 끌어다 놓아 주세요. 파일 이름이 이 칸에 나타나면 성공입니다. 4-debug-private.txt는 넣지 마세요
       placeholder: 여기에 파일을 끌어다 놓으세요 (폰으로 QR을 찍어 열었다면, 나중에 컴퓨터에서 댓글로 붙여 주셔도 됩니다)
   - type: textarea
     id: notes

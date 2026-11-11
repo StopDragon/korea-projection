@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# Launch(bin/status.sh)가 뒤에서 띄운다: HMG-API Car Report를 USB에 저장한다(`hmgapid engine report --usb`).
+# 제보 파일 만들기(bin/status.sh make_report, 1.7.3부터 상태 화면 버튼)가 부른다: HMG-API Car Report를 USB에 저장한다(`hmgapid engine report --usb`).
 # 새 차를 추가하려면 이 파일(그 차에서 직접 찾은 훅 지점 이름)이 필요하다. 만드는 데 1분쯤 걸려서,
 # 1.7.0: status.sh --collect(뒤에서 도는 로그 모으기)가 마지막 단계로 부른다. 끝나면 리포트 진행 기록에 "USB를 빼셔도 됩니다"를 쓴다.
 # - 한 번에 하나만: carreport.lock 폴더(mkdir는 한 번에 하나만 성공). 남은 잠금은 이번 부팅의 살아 있는
@@ -30,11 +30,12 @@ $BB mkdir -p $W
 
 # 1.7.0: 결과는 토스트가 아니라 리포트 진행 기록(RPROG, 644)에 쓴다(소유자 결정: 토스트 안 씀). 상태 화면 앱이 1초마다 읽어
 # "완료: USB를 빼셔도 됩니다"를 보인다. $1: done|fail, $2: 문구
+# 1.7.3: req·req2는 status.sh rprog와 같다(앱이 자기 요청의 결과를 id로 찾는다). REQID는 status.sh가 넘긴다.
 RPROG=${RPROG:-/data/local/tmp/korea-projection-report-progress.txt}
 result() {
   ( umask 022
-    $BB printf 'pct=100\nstate=%s\nstage=%s\nstart=%s\nt=%s\nboot=%s\n' "$1" "$2" "${RSTART:-$(date +%s)}" "$(date +%s)" \
-      "$(cat $BOOT_ID 2>/dev/null)" > $RPROG.tmp && $BB chmod 644 $RPROG.tmp && $BB mv -f $RPROG.tmp $RPROG ) 2>/dev/null
+    $BB printf 'pct=100\nstate=%s\nstage=%s\nstart=%s\nt=%s\nboot=%s\nreq=%s\nreq2=%s\n' "$1" "$2" "${RSTART:-$(date +%s)}" "$(date +%s)" \
+      "$(cat $BOOT_ID 2>/dev/null)" "$REQID" "$(cat $W/req.join 2>/dev/null)" > $RPROG.tmp && $BB chmod 644 $RPROG.tmp && $BB mv -f $RPROG.tmp $RPROG ) 2>/dev/null
 }
 
 # 1.7.2(P-19): 제보 폴더 사본(2-car-report.json)은 공개 이슈에 올라가므로 IPv4 주소를 x.x.x.x로 가린다
@@ -57,8 +58,10 @@ L=$W/carreport.lock
 lock_alive() {
   _l=$(cat $L/pid 2>/dev/null)
   set -- $_l
-  [ -n "$1" ] && [ "$2" = "$(cat $BOOT_ID 2>/dev/null)" ] && [ -d /proc/$1 ] \
-    && $BB grep -q carreport.sh /proc/$1/cmdline 2>/dev/null
+  [ -n "$1" ] && [ "$2" = "$(cat $BOOT_ID 2>/dev/null)" ] && [ -d /proc/$1 ] || return 1
+  # 1.7.3(리뷰 M3): 명령줄은 NUL로 나뉜다. busybox 1.8.1 grep은 NUL 뒤를 못 볼 수 있어 빈칸으로 바꿔 본다
+  case " $($BB tr '\0' ' ' < /proc/$1/cmdline 2>/dev/null) " in *carreport.sh*) return 0 ;; esac
+  return 1
 }
 if ! $BB mkdir $L 2>/dev/null; then
   lock_alive && exit 0
@@ -67,6 +70,9 @@ if ! $BB mkdir $L 2>/dev/null; then
 fi
 echo "$$ $(cat $BOOT_ID 2>/dev/null)" > $L/pid
 
+p=
+# 마지막 묶음 L4: 삭제·업데이트(preun)나 다른 이유로 TERM을 받으면 뒤에서 도는 hmgapid engine report도 멈추고 잠금을 푼다
+trap '[ -n "$p" ] && kill $p 2>/dev/null; rm -rf $L; exit 0' TERM INT HUP
 hmgapid engine report --usb > $W/carreport.txt 2>&1 &
 p=$!
 i=0; late=0
@@ -90,7 +96,7 @@ if [ $rc = 0 ]; then
         _o="$_m/$RDIR/2-car-report.json"
         if ! $BB mkdir -p "$_m/$RDIR" 2>/dev/null; then
           :
-        elif ipmask "$_f" > "$_o.tmp" 2>/dev/null && [ -s "$_o.tmp" ] && ! ipleft "$_o.tmp" && $BB mv -f "$_o.tmp" "$_o" 2>/dev/null; then
+        elif ipmask "$_f" 2>/dev/null > "$_o.tmp" && [ -s "$_o.tmp" ] && ! ipleft "$_o.tmp" && $BB mv -f "$_o.tmp" "$_o" 2>/dev/null; then
           copied=1
         else
           # 가리지 못한 사본도, 예전(1.7.1 이하가 가리지 않고 만든) 사본도 남기지 않는다
@@ -112,7 +118,7 @@ elif [ $ok = 1 ]; then
 else
   # 시간이 넘었으면 HMG-API가 아직 쓰는 중일 수 있다: 조금 더 기다린 뒤 알린다
   [ $late = 1 ] && { sleep $CR_GRACE; sync; }
-  result fail "리포트(1·3번 파일)는 저장했지만 Car Report를 저장하지 못했습니다. 이제 USB를 빼셔도 됩니다. 필요하면 USB를 다시 꽂고 Launch를 눌러 주세요."
+  result fail "리포트(1·3번 파일)는 저장했지만 Car Report는 저장하지 못했습니다(필요하면 USB를 다시 꽂고 [제보 파일 만들기]). 이제 USB를 빼셔도 됩니다."
 fi
 rm -rf $L
 exit 0

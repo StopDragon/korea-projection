@@ -3,7 +3,7 @@ version=1.1
 id=korea.projection
 name=Korea Projection: Wireless for Korean Cars
 type=service,application
-package-version=1.7.2
+package-version=1.7.3
 short-desc="Wireless CarPlay and Android Auto for Korean Hyundai/Kia cars"
 detailed-desc="순정 핫스팟이 켜지지 않는 한국 차량에서 무선 카플레이와 무선 안드로이드 오토를 사용할 수 있습니다.
 

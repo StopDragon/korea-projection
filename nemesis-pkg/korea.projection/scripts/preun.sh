@@ -12,13 +12,23 @@ HOTSPOT_LIB=1 . /data/nemesis/apps/korea.projection/svc/hotspot.sh
 # 쓸 수 있는 busybox가 없는 내비는 우리 hostapd를 켠 적이 없다: 오류 줄만 나오므로 건너뛴다
 has_bb && stop_all
 rm -f $CONF
-# Launch가 남긴 "설치 끝나면 다시 저장" 대기(status.sh --wait)도 멈추고, 진행 기록을 지운다
-_wp=$(cat $W/wait.pid 2>/dev/null)
-[ -n "$_wp" ] && $BB grep -q status.sh /proc/$_wp/cmdline 2>/dev/null && kill $_wp 2>/dev/null
+# Launch가 남긴 "설치 끝나면 다시 저장" 대기(status.sh --wait)도 멈추고, 진행 기록을 지운다.
+# 1.7.3: 감시자(--watch)와 제보 만들기(--watch·--report가 쓰는 collect.pid)도 멈춘다(업데이트 때도: 새 판이 다시 띄운다).
+# 파일 첫 칸이 pid다. 명령줄은 NUL로 나뉘어 있어(리뷰 M3) busybox가 있으면 pcmd(NUL → 빈칸)로, 없으면 cat으로 읽어 본다
+# (셸의 $(…)는 NUL을 버려 낱말이 붙지만 "status.sh"는 그대로 보인다).
+# 리뷰 L6: Car Report 저장(carreport.sh, 잠금 폴더 안의 pid)도 멈춘다(지운 뒤 $W가 없는데 USB에 쓰며 남지 않게)
+for _pf in wait.pid watch.pid collect.pid carreport.lock/pid; do
+  _wp=$(cat $W/$_pf 2>/dev/null); set -- $_wp
+  [ -n "$1" ] || continue
+  if has_bb; then _pc=$(pcmd $1); else _pc=$(cat /proc/$1/cmdline 2>/dev/null); fi
+  case "$_pc" in *status.sh*|*carreport.sh*) kill $1 2>/dev/null ;; esac
+done
 rm -f $PROG $PROG.tmp
 rm -rf $W
 # 상태 화면용 파일 (bin/status.sh가 $W 밖에 쓴다)
 rm -f /data/local/tmp/korea-projection-status.txt /data/local/tmp/korea-projection-status.txt.tmp
+# 베타 1 리뷰 3: 감시자 끝 시각 파일(앱이 읽음). 감시자는 위에서 멈췄으므로 업데이트 때도 지운다(새 Launch가 다시 씀)
+rm -f /data/local/tmp/korea-projection-watch.txt /data/local/tmp/korea-projection-watch.txt.tmp
 # 1.7.2: 상태 화면 안내 파일(서비스가 씀). 업데이트 때도 지운다(새 서비스가 다시 쓴다)
 rm -f $HINT $HINT.tmp
 # 1.6.2: 순정 hostapd가 돌고 있으면(순정 카플레이 AP 등) 그 주소는 순정 것이라 지우지 않는다(지우면 순정 카플레이가 끊김, 리뷰 H1)
@@ -40,6 +50,12 @@ case "$(cat /proc/$PPID/cmdline 2>/dev/null)" in
     fi ;;
 esac
 remove_app
+# 1.7.3: 제보 저장 진행 기록(상태 화면이 읽음)도 지운다(지울 때만, 업데이트 때는 위에서 끝남: 화면이 이어 보일 수 있게)
+RPROG=${RPROG:-/data/local/tmp/korea-projection-report-progress.txt}
+rm -f $RPROG $RPROG.tmp
+# 리뷰 M2: 재부팅 결과 파일(status.sh rb_result, 상태 화면이 읽음)도 지울 때만 지운다
+RBRES=${RBRES:-/data/local/tmp/korea-projection-reboot-result.txt}
+rm -f $RBRES $RBRES.tmp
 # 1.5: 우리가 설치한 HMG-API 무선 모드만 정리한다(mod.ours). 1.6.1: 지금 있는 모드가 한국 차 빌드(mod_kor)일 때만:
 # mod.ours가 오래된 기록이고 차주가 다른 판(HMG-API 기본판)을 넣었으면 그 모드는 지우지 않는다. 원래 있던 모드와 지도는 그대로 둔다
 # (지도는 HMG-API의 다른 모드도 쓴다). 계획이 그 모드의 되돌리기뿐일 때만 적용하고, 아니면 앱에서 적용하라고 안내한다.
@@ -99,6 +115,8 @@ fi
 # 되돌리지 못하면(settings 없음·실패) 기록은 아래에서 $BK와 함께 지워지므로 삭제 출력에 남긴다(리뷰 L1).
 apon_restore || modmsg="$modmsg 순정 핫스팟 저장값(wifi_ap_on)을 되돌리지 못했습니다. 무선 카플레이가 안 되면 제보해 주세요."
 rm -rf $BK
+# 리뷰 L9: 되돌리기 USB(usb-modrollback)가 내비에 남긴 작업 폴더(진행·기록)도 진짜 삭제 때만 지운다(고정 표시 mod.pin은 $BK와 함께 지워짐)
+rm -rf ${KP_RB_D:-/data/local/tmp/kp-rollback}
 # 1.7.1: 토스트는 쓰지 않는다(상태 화면 앱도 함께 지워지므로 NEMESIS 삭제 출력으로만 알린다). 알림 기록도 지운다.
 rm -f $NOTICE $NOTICE.tmp
 echo "Korea Projection을 삭제했습니다. 내비를 재부팅하면(RESET 버튼 또는 NEMESIS 재부팅) 일반 Wi-Fi가 원래대로 돌아옵니다.$modmsg"
