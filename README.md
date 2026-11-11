@@ -145,7 +145,7 @@
 
 예전 버전에서 업데이트할 때도 같은 방법으로 설치하면 됩니다.
 
-NEMESIS Manager의 Package Store에는 1.7.1이 올라가 있고, 1.7.2는 심사 중입니다. 최신 판은 위 방법대로 릴리스의 USB 묶음으로 설치하세요.
+NEMESIS Manager의 Package Store에는 1.7.2가 올라가 있고, 1.7.3은 심사 중입니다. 최신 판은 위 방법대로 릴리스의 USB 묶음으로 설치하세요.
 
 > **NEMESIS Manager 목록 이름:** **Korea Projection: Wireless for Korean Cars**입니다. 예전 버전은 **Korea Projection** 또는 **Wireless Projection for Korean Cars**로 보이지만 같은 패키지(`korea.projection`)입니다.
 
