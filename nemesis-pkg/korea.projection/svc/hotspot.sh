@@ -947,6 +947,93 @@ sys_restore_all() {
   rmdir "$SYSORIG" 2>/dev/null || :
   return $_sra_rc
 }
+
+wide_apply() {
+  wide_supported || return 0
+  if [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; then return 0; fi
+  if ! command -v settings >/dev/null 2>&1; then
+    if [ -z "$_WIDE_NOSET_TOLD" ]; then log "와이드스크린 설정 건너뜀: settings 명령 없음"; fi
+    _WIDE_NOSET_TOLD=1
+    return 1
+  fi
+  _wa_rc=0
+  for _wa_k in carplay_ss_osd carplay_ss_osd_dr1 carplay_ss_osd_dr2 \
+               androidauto_ss_osd androidauto_ss_osd_dr1 androidauto_ss_osd_dr2; do
+    sys_guard_set "$_wa_k" 0 || _wa_rc=1
+  done
+  _wa_upp=$(getprop ro.product.opt.useppsettings 2>/dev/null)
+  if [ "$_wa_upp" = true ]; then
+    for _wa_k in phoneprojection_setting_use_split_screen \
+                 phoneprojection_setting_use_split_screen_dr1 \
+                 phoneprojection_setting_use_split_screen_dr2; do
+      sys_guard_set "$_wa_k" 0 || _wa_rc=1
+    done
+  else
+    for _wa_k in phoneprojection_setting_use_split_screen \
+                 phoneprojection_setting_use_split_screen_dr1 \
+                 phoneprojection_setting_use_split_screen_dr2; do
+      if _wa_v=$(sys_get "$_wa_k"); then
+        if [ "$_wa_v" = 1 ]; then sys_guard_set "$_wa_k" -1 || _wa_rc=1; fi
+      else
+        log "시스템 설정($_wa_k) 값을 읽지 못함"
+        _wa_rc=1
+      fi
+    done
+  fi
+  return $_wa_rc
+}
+
+wide_restore() {
+  if [ -L "$SYSORIG" ]; then
+    log "시스템 설정 되돌리기 건너뜀: 백업 폴더가 심볼릭 링크"
+    return 1
+  fi
+  _wr_rc=0
+  sys_restore_keys \
+    carplay_ss_osd carplay_ss_osd_dr1 carplay_ss_osd_dr2 \
+    androidauto_ss_osd androidauto_ss_osd_dr1 androidauto_ss_osd_dr2 \
+    phoneprojection_setting_use_split_screen \
+    phoneprojection_setting_use_split_screen_dr1 \
+    phoneprojection_setting_use_split_screen_dr2 || _wr_rc=1
+  if [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; then
+    rmdir "$SYSORIG" 2>/dev/null || :
+  fi
+  return $_wr_rc
+}
+
+usb_guard() {
+  usb_guard_supported || return 0
+  if ! command -v settings >/dev/null 2>&1; then
+    if [ -z "$_USB_NOSET_TOLD" ]; then log "유선 USB 설정 확인 건너뜀: settings 명령 없음"; fi
+    _USB_NOSET_TOLD=1
+    return 1
+  fi
+  _ug_rc=0
+  for _ug_k in androidauto_information androidauto_information_dr1 androidauto_information_dr2 \
+               carplay_information carplay_information_dr1 carplay_information_dr2; do
+    sys_init_if_unset "$_ug_k" 1 || _ug_rc=1
+  done
+  _ug_upp=$(getprop ro.product.opt.useppsettings 2>/dev/null)
+  if [ "$_ug_upp" = true ]; then
+    for _ug_k in phoneprojection_setting_enable_usb_cable \
+                 phoneprojection_setting_enable_usb_cable_dr1 \
+                 phoneprojection_setting_enable_usb_cable_dr2; do
+      sys_init_if_unset "$_ug_k" 1 || _ug_rc=1
+    done
+  else
+    for _ug_k in phoneprojection_setting_enable_usb_cable \
+                 phoneprojection_setting_enable_usb_cable_dr1 \
+                 phoneprojection_setting_enable_usb_cable_dr2; do
+      if _ug_v=$(sys_get "$_ug_k"); then
+        if [ "$_ug_v" = 0 ]; then sys_guard_set "$_ug_k" -1 || _ug_rc=1; fi
+      else
+        log "시스템 설정($_ug_k) 값을 읽지 못함"
+        _ug_rc=1
+      fi
+    done
+  fi
+  return $_ug_rc
+}
 # 대기만 한다. sleep을 뒤에서 돌리고 wait로 기다려야 TERM이 오면 바로 trap이 돈다(앞에서 돌리면 최대 1시간 늦음).
 # mode=restart: 끝내지 않는다(svcmgr가 죽은 횟수를 세지 않게)
 idle_forever() { while true; do sleep 3600 & wait $!; done; }
@@ -2370,6 +2457,9 @@ main() {
   fi
   car_in "$prod" "$CARS_TRY" && log "시험 지원 차: $prod (차에서 아직 확인되지 않음)"
   trap 'stop_all; log "멈춤"; exit 0' TERM INT HUP
+  # 무선 모드가 준비되기 전에도 대상 차(IGPE.KOR.*.260902)의 유선 1920x720·USB 연결이 바로 동작하게 먼저 맞춘다
+  wide_apply
+  usb_guard
   if ! try_ready "$prod"; then
     log "대기: HMG-API 무선 모드가 설치·켜짐 상태가 아님 (시험 지원 차는 모드가 있어야 핫스팟을 켬)"
     if setup_pending; then
@@ -2464,8 +2554,8 @@ main() {
     n=$((n+1))
     # once an hour: one line with the CarPlay connections
     [ $((n % 120)) -eq 0 ] && log "동작 중: $(cp_count) 개 카플레이 연결"
-    # 1.7.2(P-7, 리뷰 M2): 10분마다 순정 AP 저장값을 다시 본다(0이면 settings get 한 번뿐, 로그 없음)
-    [ $((n % 20)) -eq 0 ] && apon_off
+    # 1.7.2(P-7, 리뷰 M2): 10분마다 순정 AP 저장값과 대상 차 와이드·유선 USB 설정을 다시 본다(바뀌지 않았으면 get만, 로그 없음)
+    [ $((n % 20)) -eq 0 ] && { apon_off; wide_apply; usb_guard; }
   done
 }
 
