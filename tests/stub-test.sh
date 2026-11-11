@@ -2603,5 +2603,695 @@ else
   echo "건너뜀: 진단 USB 스크립트 테스트 (공개 저장소에 없는 파일)"
 fi
 
+# --- 와이드스크린·유선 보호: 그랜저 IG (IGPE.KOR.*.260902) 1920x720 & 유선 USB 설정 가드 ---
+WS=$T/ws; rm -rf $WS; mkdir -p $WS/bin $WS/tb $WS/app $WS/bk $WS/w $WS/logs $WS/usb0 $WS/usb1 $WS/stage $WS/hd/mods/wireless-carplay-aa $WS/proc $WS/sys/app $WS/sys/lib $WS/sys/onebin/igpe_kr $WS/hm/mod $WS/hm/set $WS/hs
+cp -R $PKG/* $WS/app/
+sed "s#^export PATH=.*#export PATH=$WS/bin:/usr/bin:/bin:/sbin#" $PKG/svc/hotspot.sh > $WS/app/svc/hotspot.sh
+sed "s#^export PATH=.*#export PATH=$WS/bin:/usr/bin:/bin:/sbin#" $PKG/bin/carreport.sh > $WS/app/bin/carreport.sh
+PY3=$(command -v python3)
+cat > $WS/bin/dbtool.py <<'PY'
+import json, os, re, sys
+
+db_path = os.environ["WS_DB"]
+calls_path = os.environ["WS_CALLS"]
+ws_dir = os.environ["WS_DIR"]
+
+def load():
+    if os.path.exists(db_path):
+        with open(db_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"system": {}, "global": {}, "secure": {}}
+
+def save(db):
+    tmp = db_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(db, f, sort_keys=True)
+    os.replace(tmp, db_path)
+
+def log_call(line):
+    with open(calls_path, "a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+mode = sys.argv[1]
+args = sys.argv[2:]
+
+if mode == "settings":
+    log_call("settings " + " ".join(args))
+    if os.path.exists(os.path.join(ws_dir, "settings.fail")):
+        sys.stderr.write("Error: settings service unavailable\n")
+        sys.exit(1)
+    if os.path.exists(os.path.join(ws_dir, "settings.garbage")):
+        sys.stdout.write("Failure calling service settings: Broken pipe\n")
+        sys.exit(0)
+    if len(args) < 3:
+        sys.stderr.write("settings: invalid args\n")
+        sys.exit(2)
+    op, ns, key = args[0], args[1], args[2]
+    db = load()
+    tbl = db.setdefault(ns, {})
+    if op == "get":
+        if os.path.exists(os.path.join(ws_dir, "settings.empty")):
+            sys.exit(0)
+        print(tbl.get(key, "null"))
+        sys.exit(0)
+    elif op == "put":
+        if len(args) < 4:
+            sys.stderr.write("settings put: missing value\n")
+            sys.exit(2)
+        val = args[3]
+        ro_keys_file = os.path.join(ws_dir, "settings.ro_keys")
+        ro_keys = set()
+        if os.path.exists(ro_keys_file):
+            with open(ro_keys_file, "r", encoding="utf-8") as f:
+                ro_keys = set(f.read().split())
+        if os.path.exists(os.path.join(ws_dir, "settings.ro")) or key in ro_keys:
+            sys.exit(0)
+        tbl[key] = val
+        save(db)
+        sys.exit(0)
+    else:
+        sys.stderr.write("Unsupported operation: %s\n" % op)
+        sys.exit(1)
+
+elif mode == "content":
+    log_call("content " + " ".join(args))
+    if os.path.exists(os.path.join(ws_dir, "content.fail")):
+        sys.stderr.write("Error: content service unavailable\n")
+        sys.exit(1)
+    if not args or args[0] != "delete":
+        sys.stderr.write("content: unsupported command\n")
+        sys.exit(2)
+    uri = None
+    where = None
+    i = 1
+    while i < len(args):
+        if args[i] == "--uri" and i + 1 < len(args):
+            uri = args[i + 1]
+            i += 2
+        elif args[i] == "--where" and i + 1 < len(args):
+            where = args[i + 1]
+            i += 2
+        else:
+            i += 1
+    m_uri = re.match(r"^content://settings/(system|global|secure)$", uri or "")
+    m_where = re.match(r"^name='([A-Za-z0-9_]+)'$", where or "")
+    if not m_uri or not m_where:
+        sys.stderr.write("content delete: invalid args\n")
+        sys.exit(2)
+    if os.path.exists(os.path.join(ws_dir, "content.ro")):
+        sys.exit(0)
+    ns = m_uri.group(1)
+    key = m_where.group(1)
+    db = load()
+    db.setdefault(ns, {}).pop(key, None)
+    save(db)
+    sys.exit(0)
+PY
+cat > $WS/bin/settings <<E
+#!/bin/sh
+WS_DB=$WS/db.json WS_CALLS=$WS/calls WS_DIR=$WS exec $PY3 $WS/bin/dbtool.py settings "\$@"
+E
+cat > $WS/bin/content <<E
+#!/bin/sh
+WS_DB=$WS/db.json WS_CALLS=$WS/calls WS_DIR=$WS exec $PY3 $WS/bin/dbtool.py content "\$@"
+E
+cat > $WS/bin/getprop <<E
+#!/bin/sh
+case "\$1" in
+  ro.build.product) cat $WS/prop.product 2>/dev/null || echo IGPE.KOR.0000.V039.001.260902 ;;
+  ro.device.splitscreen) [ -f $WS/prop.splitscreen ] && cat $WS/prop.splitscreen ;;
+  ro.product.opt.stepofspec) [ -f $WS/prop.stepofspec ] && cat $WS/prop.stepofspec ;;
+  ro.product.opt.useppsettings) [ -f $WS/prop.useppsettings ] && cat $WS/prop.useppsettings ;;
+  ro.mobis.targetdir) echo /system/onebin/igpe_kr ;;
+  ro.mobis.onebindir) echo igpe_kr ;;
+  ro.board.platform) echo tcc897x ;;
+  sys.boot_completed) echo 1 ;;
+  persist.sys.iap2.wifi) cat $WS/prop.iap2 2>/dev/null || echo t ;;
+  sys.kp.aa_ap) cat $WS/prop.aa_ap 2>/dev/null ;;
+  *) echo 0 ;;
+esac
+E
+cat > $WS/bin/pm <<E
+#!/bin/sh
+echo "pm \$*" >> $WS/calls
+echo feature:com.hkmc.software.connectivity.carplay_wireless
+echo feature:com.hkmc.software.connectivity.androidauto_wireless
+echo feature:com.hkmc.software.wifihotspot
+echo feature:android.hardware.wifi
+E
+cat > $WS/bin/nemesis <<E
+#!/bin/sh
+echo "nemesis \$*" >> $WS/calls
+echo 1.16.6
+E
+printf '#!/bin/sh\necho "setprop $*" >> %s/calls\n[ "$1" = sys.kp.aa_ap ] && echo "$2" > %s/prop.aa_ap\nexit 0\n' $WS $WS > $WS/bin/setprop
+printf '#!/bin/sh\necho "$*" >> %s/toasts\n' $WS > $WS/bin/am
+printf '#!/bin/sh\necho "svc $*" >> %s/calls\nexit 0\n' $WS > $WS/bin/svc
+printf '#!/bin/sh\necho "hostapd $*" >> %s/calls\n' $WS > $WS/bin/hostapd
+printf '#!/bin/sh\necho "dnsmasq $*" >> %s/calls\n' $WS > $WS/bin/dnsmasq
+printf '#!/bin/sh\necho "ifconfig $*" >> %s/calls\n[ "$1" = wlan0 ] && [ "$#" = 1 ] && printf "wlan0 Link encap:Ethernet\\n  inet addr:192.168.43.1  Mask:255.255.255.0\\n"\nexit 0\n' $WS > $WS/bin/ifconfig
+printf '#!/bin/sh\ncat %s/ps 2>/dev/null\n' $WS > $WS/bin/ps
+printf '#!/bin/sh\ncat %s/logcat 2>/dev/null\n' $WS > $WS/bin/logcat
+printf '#!/bin/sh\nexit 0\n' > $WS/bin/dmesg
+printf '#!/bin/sh\nexit 0\n' > $WS/bin/netstat
+printf '#!/bin/sh\nexit 1\n' > $WS/bin/hmgapid
+printf '#!/bin/sh\nexit 0\n' > $WS/bin/killall
+printf '#!/bin/sh\n/bin/sleep 0.01\n' > $WS/bin/sleep
+printf '#!/bin/sh\nexec "$@"\n' > $WS/bin/bb
+chmod +x $WS/bin/*
+
+# toolbox-only PATH($WS/tb): awk/sed/printf/tr/head/tail/stat 없음
+for c in cp rm mkdir chmod ls cat grep date sleep sync; do ln -sf "$(command -v $c)" $WS/tb/$c; done
+printf '#!/bin/sh\ncase "$1" in -*) echo "mv: $1: No such file" >&2; exit 1 ;; esac\nexec %s "$@"\n' "$(command -v mv)" > $WS/tb/mv
+chmod +x $WS/tb/mv
+cp $WS/bin/am $WS/bin/pm $WS/bin/getprop $WS/bin/setprop $WS/bin/settings $WS/bin/content $WS/bin/svc $WS/tb/
+
+ws_db_set() {
+  $PY3 -c 'import json,os,sys; p=sys.argv[1]; db=json.load(open(p)) if os.path.exists(p) else {"system":{},"global":{},"secure":{}}; db.setdefault(sys.argv[2],{})[sys.argv[3]]=sys.argv[4]; json.dump(db,open(p,"w"),sort_keys=True)' "$WS/db.json" "$1" "$2" "$3"
+}
+ws_db_del() {
+  $PY3 -c 'import json,os,sys; p=sys.argv[1]; db=json.load(open(p)) if os.path.exists(p) else {"system":{},"global":{},"secure":{}}; db.setdefault(sys.argv[2],{}).pop(sys.argv[3],None); json.dump(db,open(p,"w"),sort_keys=True)' "$WS/db.json" "$1" "$2"
+}
+ws_db_get() {
+  $PY3 -c 'import json,os,sys; p=sys.argv[1]; db=json.load(open(p)) if os.path.exists(p) else {}; print(db.get(sys.argv[2],{}).get(sys.argv[3],"__ABSENT__"))' "$WS/db.json" "$1" "$2"
+}
+ws_mode_perm() {
+  $PY3 -c 'import os,sys; print(oct(os.stat(sys.argv[1]).st_mode & 0o777)[2:])' "$1"
+}
+ws_reset() {
+  rm -rf $WS/bk $WS/w $WS/logs $WS/usb0 $WS/usb1 $WS/stage $WS/hd $WS/calls $WS/toasts $WS/out $WS/pout $WS/stout \
+    $WS/db.json $WS/settings.fail $WS/settings.ro $WS/settings.ro_keys $WS/settings.empty $WS/settings.garbage \
+    $WS/content.fail $WS/content.ro $WS/prop.aa_ap $WS/rprog $WS/status.txt $WS/prog $WS/ps $WS/logcat $WS/mounts \
+    $WS/victim $WS/victim_so $WS/extdir $WS/dangling_target
+  mkdir -p $WS/bk $WS/w $WS/logs $WS/usb0 $WS/usb1 $WS/stage $WS/hd/mods/wireless-carplay-aa
+  echo '{"system": [{"region": "KOR"}]}' > $WS/hd/mods/wireless-carplay-aa/mod.json
+  echo IGPE.KOR.0000.V039.001.260902 > $WS/prop.product
+  echo left_right > $WS/prop.splitscreen
+  echo 110 > $WS/prop.stepofspec
+  echo false > $WS/prop.useppsettings
+  echo t > $WS/prop.iap2
+  echo boot-ws > $WS/bootid
+  echo "100.00 10.00" > $WS/uptime
+  : > $WS/ps; : > $WS/logcat; : > $WS/mounts
+  printf '{"system":{},"global":{},"secure":{}}\n' > $WS/db.json
+}
+wsl_fn() {
+  (PATH=$WS/bin:/usr/bin:/bin:/sbin HOTSPOT_LIB=1 BB=$WS/bin/bb W=$WS/w BK=$WS/bk BOOT_ID=$WS/bootid \
+   UPTIME=$WS/uptime HMGDATA=$WS/hd SRC=$T/softap.conf CONF=$WS/hk.conf NOTICE=$WS/toasts PROG=$WS/prog \
+   PROC=$WS/proc WLAN=$WS/no-wlan WIFI_WAIT=0 WPDIR=$WS/no-wp OLDPKG=$WS/no-old \
+   ${WSSH:-sh} -c '. '$WS'/app/svc/hotspot.sh; export PATH='$WS'/bin:/usr/bin:/bin:/sbin; '"$1")
+}
+
+# 1) wide_supported & usb_guard_supported
+ws_reset
+check "와이드스크린: wide_supported는 실차 검증 모델·버전(IGPE.KOR.0000·S5W_M .260902 + splitscreen=left_right)만 지원" '
+  for p in IGPE.KOR.0000.V039.001.260902 IGPE.KOR.S5W_M.V039.001.260902; do
+    echo "$p" > $WS/prop.product
+    wsl_fn wide_supported || exit 1
+  done'
+check "  wide_supported: 타 모델(IGPE21/IGPEHEV/IGPE21HEV/DEPEHEV)·다른 빌드(260604)·해외·splitscreen 꺼짐 → 미지원" '
+  for p in IGPE21.KOR.0000.V039.001.260902 IGPEHEV.KOR.0000.V039.001.260902 IGPE21HEV.KOR.0000.V039.001.260902 IGPE.KOR.S5W_M.V038.001.260604 DEPEHEV.KOR.0000.V039.001.260902 IGPE.USA.0000.V039.001.260902; do
+    echo "$p" > $WS/prop.product
+    ! wsl_fn wide_supported || exit 1
+  done
+  echo IGPE.KOR.S5W_M.V039.001.260902 > $WS/prop.product
+  rm -f $WS/prop.splitscreen
+  ! wsl_fn wide_supported || exit 1
+  echo 0 > $WS/prop.splitscreen
+  ! wsl_fn wide_supported || exit 1
+  echo disable > $WS/prop.splitscreen
+  ! wsl_fn wide_supported || exit 1'
+check "  usb_guard_supported: IGPE.KOR.*.260902만(splitscreen=disable 포함) 지원, 타 모델·다른 빌드(260604)·해외 → 미지원" '
+  for p in IGPE.KOR.0000.V039.001.260902 IGPE.KOR.S5W_M.V039.001.260902; do
+    echo "$p" > $WS/prop.product
+    echo disable > $WS/prop.splitscreen
+    wsl_fn usb_guard_supported || exit 1
+  done
+  for p in IGPE21.KOR.0000.V039.001.260902 IGPEHEV.KOR.0000.V039.001.260902 IGPE21HEV.KOR.0000.V039.001.260902 IGPE.KOR.S5W_M.V038.001.260604 DEPEHEV.KOR.0000.V039.001.260902 IGPE.USA.0000.V039.001.260902; do
+    echo "$p" > $WS/prop.product
+    ! wsl_fn usb_guard_supported || exit 1
+  done'
+
+# 2) sys_get / sys_put / sys_del KitKat 트랩 검증
+ws_reset
+ws_db_set system k_one 1
+ws_db_set system k_neg -1
+$WS/bin/settings put system k_lit_null null
+check "와이드스크린: KitKat mock·sys_del: settings put null은 리터럴 문자열, sys_del(content delete)은 행 삭제" '
+  [ "$(ws_db_get system k_lit_null)" = "null" ] && wsl_fn "sys_del k_lit_null" && [ "$(ws_db_get system k_lit_null)" = "__ABSENT__" ] && grep -q "^content delete --uri content://settings/system --where name='\''k_lit_null'\''" $WS/calls'
+check "  sys_get: null·0·1·-1 허용, 비정상 키 거부, 오류·빈 출력은 실패(비-0)" '
+  [ "$(wsl_fn "sys_get k_one")" = 1 ] && [ "$(wsl_fn "sys_get k_neg")" = -1 ] && [ "$(wsl_fn "sys_get missing_k")" = null ] &&
+  ! wsl_fn "sys_put \"bad;key\" 1" >/dev/null 2>&1 && ! wsl_fn "sys_del \"bad/key\"" >/dev/null 2>&1 &&
+  { : > $WS/settings.empty; ! wsl_fn "sys_get k_one" >/dev/null 2>&1; } &&
+  { rm -f $WS/settings.empty; : > $WS/settings.garbage; ! wsl_fn "sys_get k_one" >/dev/null 2>&1; } &&
+  { rm -f $WS/settings.garbage; : > $WS/settings.fail; ! wsl_fn "sys_get k_one" >/dev/null 2>&1; }'
+
+# 3) wide_apply: null/1/0, useppsettings=false vs true, idempotency, BlueLink 외부 변경 재적용, _0 키 없음
+ws_reset
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system carplay_ss_osd_dr2 0
+ws_db_set system androidauto_ss_osd_dr1 1
+ws_db_set system androidauto_ss_osd_dr2 0
+ws_db_set system phoneprojection_setting_use_split_screen 1
+ws_db_set system phoneprojection_setting_use_split_screen_dr1 0
+wsl_fn wide_apply > $WS/out 2>&1
+check "와이드스크린: wide_apply(useppsettings=false): carplay/androidauto_ss_osd* → 0, use_split_screen 1 → -1, _0 없음" '
+  for k in carplay_ss_osd carplay_ss_osd_dr1 carplay_ss_osd_dr2 androidauto_ss_osd androidauto_ss_osd_dr1 androidauto_ss_osd_dr2; do
+    [ "$(ws_db_get system $k)" = 0 ] || exit 1
+  done
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen)" = -1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen_dr1)" = 0 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen_dr2)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_0)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system androidauto_ss_osd_0)" = "__ABSENT__" ]'
+check "  \$SYSORIG 백업: null→0, 1→0, 1→-1 기록, 이미 0이었던 _dr2는 기록 안 함" '
+  [ "$(cat $WS/bk/sys.orig/carplay_ss_osd)" = "null 0" ] &&
+  [ "$(cat $WS/bk/sys.orig/carplay_ss_osd_dr1)" = "1 0" ] &&
+  [ ! -e $WS/bk/sys.orig/carplay_ss_osd_dr2 ] &&
+  [ "$(cat $WS/bk/sys.orig/androidauto_ss_osd)" = "null 0" ] &&
+  [ "$(cat $WS/bk/sys.orig/androidauto_ss_osd_dr1)" = "1 0" ] &&
+  [ ! -e $WS/bk/sys.orig/androidauto_ss_osd_dr2 ] &&
+  [ "$(cat $WS/bk/sys.orig/phoneprojection_setting_use_split_screen)" = "1 -1" ]'
+rm -f $WS/calls
+wsl_fn wide_apply > $WS/out 2>&1
+check "  wide_apply 멱등성: 이미 맞춰진 상태에서 다시 불러도 settings put 없음" '! grep -q "^settings put " $WS/calls 2>/dev/null'
+ws_db_set system carplay_ss_osd 1
+ws_db_set system androidauto_ss_osd_dr1 1
+rm -f $WS/calls
+wsl_fn wide_apply > $WS/out 2>&1
+check "  외부 변경(BlueLink 등 0→1): 다시 0으로 맞추되 \$SYSORIG 원래 값(null·1) 보존" '
+  [ "$(ws_db_get system carplay_ss_osd)" = 0 ] && [ "$(ws_db_get system androidauto_ss_osd_dr1)" = 0 ] &&
+  [ "$(cat $WS/bk/sys.orig/carplay_ss_osd)" = "null 0" ] && [ "$(cat $WS/bk/sys.orig/androidauto_ss_osd_dr1)" = "1 0" ]'
+# useppsettings=true
+ws_reset
+echo true > $WS/prop.useppsettings
+ws_db_set system phoneprojection_setting_use_split_screen_dr1 1
+ws_db_set system phoneprojection_setting_use_split_screen_dr2 0
+wsl_fn wide_apply > $WS/out 2>&1
+check "  wide_apply(useppsettings=true): use_split_screen*도 0으로 설정" '
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen)" = 0 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen_dr1)" = 0 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen_dr2)" = 0 ] &&
+  [ "$(cat $WS/bk/sys.orig/phoneprojection_setting_use_split_screen)" = "null 0" ] &&
+  [ "$(cat $WS/bk/sys.orig/phoneprojection_setting_use_split_screen_dr1)" = "1 0" ] &&
+  [ ! -e $WS/bk/sys.orig/phoneprojection_setting_use_split_screen_dr2 ]'
+# WIDEOFF / DEPEHEV / settings.ro / settings.fail / missing settings / symlink & set -f
+ws_reset; : > $WS/bk/wide-off; wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+check "  wide_apply: \$WIDEOFF가 있으면 0을 돌려주고 아무것도 쓰지 않음" '[ $_wrc = 0 ] && ! grep -q "^settings put " $WS/calls 2>/dev/null && { [ ! -d $WS/bk/sys.orig ] || [ -z "$(ls $WS/bk/sys.orig 2>/dev/null)" ]; }'
+ws_reset; echo DEPEHEV.KOR.0000.V039.001.260902 > $WS/prop.product; wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+check "  wide_apply: DEPEHEV에서는 0을 돌려주고 아무것도 쓰지 않음" '[ $_wrc = 0 ] && ! grep -q "^settings put " $WS/calls 2>/dev/null'
+ws_reset; for _np in IGPE21HEV.KOR.0000.V039.001.260902 IGPE.KOR.S5W_M.V038.001.260604; do
+  rm -f $WS/calls
+  echo "$_np" > $WS/prop.product
+  wsl_fn wide_apply > $WS/out 2>&1 || exit 1
+  wsl_fn usb_guard > $WS/out 2>&1 || exit 1
+done
+check "  wide_apply·usb_guard: IGPE21HEV·다른 빌드(260604)에서는 settings 조회·쓰기 모두 0회" '! grep -q "^settings " $WS/calls 2>/dev/null'
+ws_reset; : > $WS/settings.ro; wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+check "  wide_apply: put readback 실패 시 비-0(1) 반환 및 \$SYSORIG 백업 안 씀" '[ $_wrc != 0 ] && [ ! -f $WS/bk/sys.orig/carplay_ss_osd ]'
+ws_reset; : > $WS/settings.fail; wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+check "  wide_apply: settings 실패 시 비-0(1) 반환" '[ $_wrc != 0 ]'
+ws_reset; mv $WS/bin/settings $WS/settings.off; wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?; mv $WS/settings.off $WS/bin/settings
+check "  wide_apply: settings 명령 없으면 비-0(1) 반환" '[ $_wrc != 0 ]'
+ws_reset; mkdir -p $WS/bk/sys.orig; echo "0 1" > $WS/victim; ln -s $WS/victim $WS/bk/sys.orig/carplay_ss_osd
+wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+wsl_fn sys_restore_all > $WS/out 2>&1; _rrc=$?
+check "  \$SYSORIG 키 심볼릭 링크 방어: wide_apply·sys_restore_all이 심볼릭 대상을 덮거나 지우지 않고 비-0(1)" '[ $_wrc != 0 ] && [ $_rrc != 0 ] && [ "$(cat $WS/victim)" = "0 1" ] && [ -L $WS/bk/sys.orig/carplay_ss_osd ]'
+ws_reset; mkdir -p $WS/extdir; echo "null 0" > $WS/extdir/carplay_ss_osd; ln -s $WS/extdir $WS/bk/sys.orig
+wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+wsl_fn sys_restore_all > $WS/out 2>&1; _rrc=$?
+check "  \$SYSORIG 폴더 심볼릭 링크 방어: wide_apply·sys_restore_all이 심볼릭 폴더 내부를 건드리지 않고 비-0(1)" '[ $_wrc != 0 ] && [ $_rrc != 0 ] && [ "$(cat $WS/extdir/carplay_ss_osd)" = "null 0" ] && [ -L $WS/bk/sys.orig ]'
+ws_reset; mkdir -p $WS/bk/sys.orig; ln -s $WS/dangling_target $WS/bk/sys.orig/carplay_ss_osd
+wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+wsl_fn wide_restore > $WS/out 2>&1; _rrc=$?
+check "  \$SYSORIG 깨진(dangling) 심볼릭 링크 방어: 대상 파일 생성 없이 비-0(1)" '[ $_wrc != 0 ] && [ $_rrc != 0 ] && [ ! -e $WS/dangling_target ] && [ -L $WS/bk/sys.orig/carplay_ss_osd ]'
+ws_reset; echo target > $WS/victim; ln -s $WS/victim $WS/bk/wide-off
+wsl_fn wide_apply > $WS/out 2>&1; _wrc=$?
+check "  \$WIDEOFF 심볼릭 링크 무시: wide_apply가 끄기로 오인하지 않고 정상 적용" '[ $_wrc = 0 ] && [ "$(ws_db_get system carplay_ss_osd)" = 0 ]'
+ws_reset; mkdir -p $WS/bk/sys.orig
+check "  sys_restore_all(빈 \$SYSORIG): sh·mksh에서 set -f / set +f 상태를 그대로 보존" '
+  for _fsh in sh $KSHS; do
+    WSSH=$_fsh wsl_fn "set -f; sys_restore_all >/dev/null 2>&1 || exit 1; case \$- in *f*) exit 0 ;; *) exit 1 ;; esac" || exit 1
+    WSSH=$_fsh wsl_fn "set +f; sys_restore_all >/dev/null 2>&1 || exit 1; case \$- in *f*) exit 1 ;; *) exit 0 ;; esac" || exit 1
+  done'
+
+# 4) usb_guard: null/-1/2 -> 1, 0 보존 + 주의 경고, enable_usb_cable(false vs true)
+ws_reset
+ws_db_set system androidauto_information_dr1 -1
+ws_db_set system androidauto_information_dr2 0
+ws_db_set system carplay_information 2
+ws_db_set system carplay_information_dr1 1
+ws_db_set system phoneprojection_setting_enable_usb_cable_dr1 -1
+ws_db_set system phoneprojection_setting_enable_usb_cable_dr2 0
+wsl_fn usb_guard > $WS/out 2>&1
+check "유선 보호: usb_guard(useppsettings=false): null/-1/잘못된값 → 1, 0 보존+주의 경고, enable_usb_cable 1 안 씀 & 0→-1" '
+  [ "$(ws_db_get system androidauto_information)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information_dr1)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information_dr2)" = 0 ] &&
+  [ "$(ws_db_get system carplay_information)" = 1 ] &&
+  [ "$(ws_db_get system carplay_information_dr1)" = 1 ] &&
+  [ "$(ws_db_get system carplay_information_dr2)" = 1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable_dr1)" = -1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable_dr2)" = -1 ] &&
+  [ "$(cat $WS/bk/sys.orig/androidauto_information)" = "null 1" ] &&
+  [ "$(cat $WS/bk/sys.orig/androidauto_information_dr1)" = "-1 1" ] &&
+  [ ! -e $WS/bk/sys.orig/androidauto_information_dr2 ] &&
+  [ "$(cat $WS/bk/sys.orig/carplay_information)" = "2 1" ] &&
+  [ ! -e $WS/bk/sys.orig/carplay_information_dr1 ] &&
+  [ "$(cat $WS/bk/sys.orig/phoneprojection_setting_enable_usb_cable_dr2)" = "0 -1" ] &&
+  grep -q "주의:.*androidauto_information_dr2=0" $WS/out'
+rm -f $WS/calls
+wsl_fn usb_guard > $WS/out 2>&1
+check "  usb_guard 멱등성: 두 번째 호출에 settings put 없음" '! grep -q "^settings put " $WS/calls 2>/dev/null'
+# useppsettings=true
+ws_reset
+echo true > $WS/prop.useppsettings
+ws_db_set system phoneprojection_setting_enable_usb_cable_dr1 -1
+ws_db_set system phoneprojection_setting_enable_usb_cable_dr2 0
+wsl_fn usb_guard > $WS/out 2>&1
+check "  usb_guard(useppsettings=true): enable_usb_cable null/-1 → 1, 0 보존+주의 경고" '
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable)" = 1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable_dr1)" = 1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable_dr2)" = 0 ] &&
+  grep -q "주의:.*phoneprojection_setting_enable_usb_cable_dr2=0" $WS/out'
+ws_reset; echo DEPEHEV.KOR.0000.V039.001.260902 > $WS/prop.product; wsl_fn usb_guard > $WS/out 2>&1; _urc=$?
+check "  usb_guard: DEPEHEV에서는 0을 돌려주고 아무것도 쓰지 않음" '[ $_urc = 0 ] && ! grep -q "^settings put " $WS/calls 2>/dev/null'
+ws_reset; : > $WS/settings.ro; wsl_fn usb_guard > $WS/out 2>&1; _urc=$?
+check "  usb_guard: put readback 실패(settings.ro) 시 비-0(1) 반환" '[ $_urc != 0 ]'
+ws_reset; : > $WS/settings.fail; wsl_fn usb_guard > $WS/out 2>&1; _urc=$?
+check "  usb_guard: settings 실패 시 비-0(1) 반환" '[ $_urc != 0 ]'
+ws_reset; mv $WS/bin/settings $WS/settings.off; wsl_fn usb_guard > $WS/out 2>&1; _urc=$?; mv $WS/settings.off $WS/bin/settings
+check "  usb_guard: settings 명령 없으면 비-0(1) 반환" '[ $_urc != 0 ]'
+
+# 5) hotspot.sh main() 통합: try_ready 전 즉시 적용, 10분(n%20==0) 재적용, DEPEHEV 무영향
+ws_reset
+rm -rf $WS/hd/mods/wireless-carplay-aa
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system androidauto_information_dr1 -1
+(PATH=$WS/bin:/usr/bin:/bin:/sbin HOTSPOT_LIB=1 BB=$WS/bin/bb W=$WS/w BK=$WS/bk HMGDATA=$WS/hd \
+  BOOT_ID=$WS/bootid UPTIME=$WS/uptime SRC=$T/softap.conf CONF=$WS/hk.conf NOTICE=$WS/toasts PROG=$WS/prog \
+  PROC=$WS/proc WLAN=$WS/no-wlan WCONF=$WS/nowconf WIFI_WAIT=0 WPDIR=$WS/no-wp OLDPKG=$WS/no-old \
+  sh -c '. '$WS'/app/svc/hotspot.sh; export PATH='$WS'/bin:/usr/bin:/bin:/sbin; fix_perms() { :; }; wait() { exit 7; }; main') > $WS/out 2>&1
+check "와이드스크린 main(): 시험 지원 IGPE가 try_ready 대기 전에도 wide_apply·usb_guard를 먼저 실행" '
+  [ "$(ws_db_get system carplay_ss_osd)" = 0 ] && [ "$(ws_db_get system carplay_ss_osd_dr1)" = 0 ] &&
+  [ "$(ws_db_get system androidauto_information)" = 1 ] && [ "$(ws_db_get system androidauto_information_dr1)" = 1 ] &&
+  [ "$(ws_db_get system carplay_information)" = 1 ]'
+ws_reset
+for _msh in sh $KSHS; do
+  ws_reset
+  ws_db_set system carplay_ss_osd_dr1 1
+  (PATH=$WS/bin:/usr/bin:/bin:/sbin HOTSPOT_LIB=1 BB=$WS/bin/bb W=$WS/w BK=$WS/bk HMGDATA=$WS/hd \
+    BOOT_ID=$WS/bootid UPTIME=$WS/uptime SRC=$T/softap.conf CONF=$WS/hk.conf NOTICE=$WS/toasts PROG=$WS/prog \
+    PROC=$WS/proc WLAN=$WS/no-wlan WCONF=$WS/nowconf WIFI_WAIT=0 WPDIR=$WS/no-wp OLDPKG=$WS/no-old \
+    $_msh -c '. '$WS'/app/svc/hotspot.sh; export PATH='$WS'/bin:/usr/bin:/bin:/sbin; fix_perms() { :; }; _wc=0; wait() { _wc=$((_wc+1)); [ $_wc -eq 5 ] && '$WS'/bin/settings put system carplay_ss_osd 1; [ $_wc -ge 21 ] && exit 7; return 0; }; main') > $WS/out 2>&1
+  check "  main()($_msh): 30초마다 반복 put/get 안 함, 10분(n=20) 주기에서 외부 변경(0→1)을 0으로 재적용·원래 값(null) 보존" '
+    [ "$(ws_db_get system carplay_ss_osd)" = 0 ] &&
+    [ "$(cat $WS/bk/sys.orig/carplay_ss_osd)" = "null 0" ] &&
+    [ "$(grep -c "^settings put system carplay_ss_osd 0$" $WS/calls)" = 2 ] &&
+    [ "$(grep -c "^settings get system carplay_ss_osd$" $WS/calls)" -le 6 ]'
+done
+ws_reset
+echo DEPEHEV.KOR.0000.V039.001.260902 > $WS/prop.product
+(PATH=$WS/bin:/usr/bin:/bin:/sbin HOTSPOT_LIB=1 BB=$WS/bin/bb W=$WS/w BK=$WS/bk HMGDATA=$WS/hd \
+  BOOT_ID=$WS/bootid UPTIME=$WS/uptime SRC=$T/softap.conf CONF=$WS/hk.conf NOTICE=$WS/toasts PROG=$WS/prog \
+  PROC=$WS/proc WLAN=$WS/no-wlan WCONF=$WS/nowconf WIFI_WAIT=0 WPDIR=$WS/no-wp OLDPKG=$WS/no-old \
+  sh -c '. '$WS'/app/svc/hotspot.sh; export PATH='$WS'/bin:/usr/bin:/bin:/sbin; fix_perms() { :; }; wait() { exit 7; }; main') > $WS/out 2>&1
+check "  main(): DEPEHEV에서는 system 설정(와이드·USB)을 건드리지 않음" '! grep -q "^settings put system " $WS/calls 2>/dev/null'
+
+# 6) post.sh: 설치 시 적용, kp-wide-off(우위) / kp-wide-on, settings 실패 무중단, toolbox-only
+ws_mk_post() {
+  sed -e "s#/data/nemesis/apps/korea\.projection/svc/hotspot\.sh#$WS/app/svc/hotspot.sh; export PATH=$1#" \
+    -e "s#/data/nemesis/apps/korea\.projection#$WS/app#g" \
+    -e "s#^export PATH=.*#export PATH=$1#" \
+    -e "s#^BK=.*#BK=$WS/bk#" \
+    -e "s#^W=.*#W=$WS/w#" \
+    -e "s#/data/local/tmp/cpdrive#$WS/cpdrive#g" \
+    -e "s#/data/nemesis/apps/niro\.carplay\.hotspot#$WS/no-old#g" \
+    -e "s#/storage/usb0#$WS/usb0#g" \
+    -e "s#/storage/usb1#$WS/usb1#g" \
+    $PKG/scripts/post.sh > $WS/post.sh
+}
+ws_reset; ws_mk_post "$WS/bin:/usr/bin:/bin:/sbin"
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system phoneprojection_setting_use_split_screen 1
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "와이드스크린 post.sh: 설치 시 IGPE 와이드스크린(0) + USB 가드(1) 적용" '
+  [ $_prc = 0 ] && [ "$(ws_db_get system carplay_ss_osd)" = 0 ] && [ "$(ws_db_get system carplay_ss_osd_dr1)" = 0 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen)" = -1 ] &&
+  [ "$(ws_db_get system androidauto_information)" = 1 ] && [ "$(ws_db_get system carplay_information)" = 1 ]'
+: > $WS/usb0/kp-wide-on; : > $WS/usb1/kp-wide-off
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: kp-wide-off가 kp-wide-on보다 우선(usb1 off vs usb0 on), 와이드만 되돌리고 USB 가드 유지" '
+  [ $_prc = 0 ] && [ -f $WS/bk/wide-off ] &&
+  [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_dr1)" = 1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_use_split_screen)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information)" = 1 ]'
+rm -f $WS/usb1/kp-wide-off
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: kp-wide-on만 있으면 wide-off 제거 후 다시 적용" '
+  [ $_prc = 0 ] && [ ! -f $WS/bk/wide-off ] && [ "$(ws_db_get system carplay_ss_osd)" = 0 ] && [ "$(ws_db_get system carplay_ss_osd_dr1)" = 0 ]'
+ws_reset; ws_mk_post "$WS/bin:/usr/bin:/bin:/sbin"; : > $WS/settings.fail
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: settings 명령이 실패해도 건너뜀 안내만 남기고 설치 성공(0)으로 끝남" '[ $_prc = 0 ] && grep -q "와이드스크린 설정 적용 건너뜀" $WS/out && grep -q "유선 프로젝션 설정 보호 건너뜀" $WS/out'
+ws_reset; ws_mk_post "$WS/bin:/usr/bin:/bin:/sbin"; echo DO_NOT_TRUNCATE > $WS/victim; ln -s $WS/victim $WS/bk/wide-off; : > $WS/usb0/kp-wide-off
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: \$WIDEOFF 심볼릭 링크를 덮어쓰지 않고 제거 후 일반 파일로 생성" '[ $_prc = 0 ] && [ "$(cat $WS/victim)" = DO_NOT_TRUNCATE ] && [ ! -L $WS/bk/wide-off ] && [ -f $WS/bk/wide-off ]'
+ws_reset; ws_mk_post "$WS/tb"
+(BB=$WS/none BB_SYS=$WS/none BB_OWN=$WS/none BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk /bin/sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: busybox 없는 toolbox PATH(! has_bb)에서도 not found 없이 성공(0)" '[ $_prc = 0 ] && ! grep -q "not found" $WS/out'
+ws_reset; ws_mk_post "$WS/bin:/usr/bin:/bin:/sbin"
+echo DEPEHEV.KOR.0000.V039.001.260902 > $WS/prop.product
+: > $WS/usb0/kp-wide-off
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1; _prc=$?
+check "  post.sh: 비대상 차(DEPEHEV)는 kp-wide-off USB가 있어도 wide-off 미생성·settings system 무변경" '
+  [ $_prc = 0 ] && [ ! -e $WS/bk/wide-off ] && ! grep -q "^settings put system " $WS/calls 2>/dev/null'
+
+# 7) status.sh: kp-wide-off/on 토글, kp-aa-* 동시 동작, 35키 유지, diag() 출력·경고·PII 없음
+ws_reset
+sed -e "s#/storage/usb0 /storage/usb1#$WS/usb0 $WS/usb1#" \
+  -e "s#/proc/mounts#$WS/mounts#" \
+  -e "s#/data/nemesis/logs/korea\.projection/ap\.log#$WS/logs/ap.log#" \
+  $PKG/bin/status.sh > $WS/st.sh
+echo "/dev/block/sda1 $WS/usb0 vfat rw 0 0" > $WS/mounts
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system androidauto_ss_osd_dr2 0
+ws_db_set system androidauto_information_dr2 0
+ws_db_set system phoneprojection_setting_use_split_screen 1
+wsl_fn wide_apply >/dev/null 2>&1
+wsl_fn usb_guard >/dev/null 2>&1
+ws_st() {
+  (PATH=$WS/bin:/usr/bin:/bin:/sbin RPT_SYNC=1 APP=$WS/app BB=$WS/bin/bb BK=$WS/bk W=$WS/w \
+   STATUS=$WS/status.txt RPROG=$WS/rprog SRC=$T/softap.conf CONF=$WS/hk.conf HMGLOG=$WS/hl \
+   HMGMOD=$WS/hm/mod HMGSET=$WS/hm/set/w.json HMGSTOCK=$WS/hs SYSAPP=$WS/sys/app \
+   SYSLIB=$WS/sys/lib SYSONE=$WS/sys/onebin PROG=$WS/prog BOOT_ID=$WS/bootid \
+   PROC=$WS/proc NOTICE=$WS/toasts AAOFF=$WS/bk/aa-off WIDEOFF=$WS/bk/wide-off SYSORIG=$WS/bk/sys.orig \
+   sh $WS/st.sh) > $WS/stout 2>&1
+}
+WS_R=$WS/usb0/KoreaProjection-report/1-report.md
+: > $WS/usb0/kp-wide-off; : > $WS/usb0/kp-aa-off
+ws_st
+check "와이드스크린 status.sh: kp-wide-off + kp-aa-off 동시 동작, carplay_ss_osd(null) content delete, 35키 유지" '
+  [ -f $WS/bk/wide-off ] && [ -f $WS/bk/aa-off ] && grep -qx "aa=no" $WS/status.txt &&
+  [ "$(grep -c "=" $WS/status.txt)" = 35 ] &&
+  [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_dr1)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_ss_osd_dr2)" = 0 ] &&
+  [ "$(ws_db_get system androidauto_information)" = 1 ]'
+: > $WS/usb0/kp-wide-on
+ws_st
+check "  status.sh: kp-wide-off + kp-wide-on 함께 있으면 끄기(wide-off) 유지" '[ -f $WS/bk/wide-off ] && [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ]'
+printf '%s\n' "/dev/block/sda1 $WS/usb0 vfat rw 0 0" "/dev/block/sdb1 $WS/usb1 vfat rw 0 0" > $WS/mounts
+: > $WS/usb0/kp-wide-on; : > $WS/usb1/kp-wide-off
+ws_st
+check "  status.sh: usb0=kp-wide-on + usb1=kp-wide-off 동시 마운트에서도 끄기(wide-off) 우선" '[ -f $WS/bk/wide-off ] && [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ]'
+echo "/dev/block/sda1 $WS/usb0 vfat rw 0 0" > $WS/mounts
+rm -f $WS/usb0/kp-wide-off $WS/usb0/kp-aa-off $WS/usb1/kp-wide-off
+: > $WS/usb0/kp-aa-on; : > $WS/usb0/kp-wide-on
+ws_st
+check "  status.sh: kp-aa-on + kp-wide-on 동시 동작 → aa=yes, wide-off 해제 및 재적용, 35키 유지" '
+  [ ! -f $WS/bk/wide-off ] && [ ! -f $WS/bk/aa-off ] && grep -qx "aa=yes" $WS/status.txt &&
+  [ "$(grep -c "=" $WS/status.txt)" = 35 ] &&
+  [ "$(ws_db_get system carplay_ss_osd)" = 0 ] && [ "$(ws_db_get system carplay_ss_osd_dr1)" = 0 ]'
+rm -f $WS/usb0/kp-aa-on $WS/usb0/kp-wide-on
+echo DO_NOT_TRUNCATE > $WS/victim; ln -s $WS/victim $WS/bk/wide-off; : > $WS/usb0/kp-wide-off
+ws_st
+check "  status.sh: \$WIDEOFF 심볼릭 링크를 비우지 않고 제거 후 일반 파일로 생성" '[ "$(cat $WS/victim)" = DO_NOT_TRUNCATE ] && [ ! -L $WS/bk/wide-off ] && [ -f $WS/bk/wide-off ]'
+rm -f $WS/usb0/kp-wide-off
+rm -f $WS/toasts; : > $WS/settings.fail; : > $WS/usb0/kp-wide-on
+ws_st
+check "  status.sh: kp-wide-on 시 settings 실패하면 '일부 설정 적용 실패' 출력·알림" '[ ! -f $WS/bk/wide-off ] && grep -q "일부 설정 적용 실패" $WS/stout && grep -q "일부 설정 적용 실패" $WS/toasts'
+rm -f $WS/settings.fail $WS/usb0/kp-wide-on
+ws_db_set system carplay_ss_osd_dr1 1
+wsl_fn wide_apply >/dev/null 2>&1
+rm -f $WS/toasts; : > $WS/settings.fail; : > $WS/usb0/kp-wide-off
+ws_st
+check "  status.sh: kp-wide-off 시 settings 실패하면 '일부 설정 되돌리지 못함' 출력·알림" '[ -f $WS/bk/wide-off ] && grep -q "일부 설정 되돌리지 못함" $WS/stout && grep -q "일부 설정 되돌리지 못함" $WS/toasts'
+rm -f $WS/settings.fail $WS/usb0/kp-wide-off
+: > $WS/usb0/kp-wide-on; ws_st >/dev/null 2>&1; rm -f $WS/usb0/kp-wide-on
+echo "SECRET_ORIG 0" > $WS/victim_so; ln -s $WS/victim_so $WS/bk/sys.orig/fake_secret
+ws_db_set system carplay_ss_osd_dr2 "bad;val/x"
+ws_st
+sed -n '/^## 연결 진단/,/^## /p' $WS_R > $WS/diag.txt
+check "  status.sh diag(): 와이드/USB 속성·설정키·\$SYSORIG(-1 부호 유지, 심볼릭 무시)·=0 주의 경고 출력 및 PII·특수문자 제거" '
+  grep -q "left_right" $WS/diag.txt && grep -q "110" $WS/diag.txt && grep -q "false" $WS/diag.txt &&
+  grep -q "carplay_ss_osd" $WS/diag.txt && grep -q "androidauto_ss_osd" $WS/diag.txt &&
+  grep -q "androidauto_information" $WS/diag.txt && grep -q "carplay_information" $WS/diag.txt &&
+  grep -q "phoneprojection_setting_enable_usb_cable" $WS/diag.txt &&
+  grep -q "phoneprojection_setting_use_split_screen" $WS/diag.txt &&
+  grep -q "phoneprojection_setting_use_split_screen=1->-1" $WS/diag.txt &&
+  grep -q "badvalx" $WS/diag.txt &&
+  grep -q "주의:" $WS/diag.txt &&
+  ! grep -qE "SECRET_ORIG|fake_secret" $WS/diag.txt &&
+  ! grep -q "bad;val/x" $WS/diag.txt &&
+  ! grep -q -F -e "SSID\\cX" -e "PASS\\word99" -e "192.168.43.23" $WS_R $WS/status.txt'
+ws_reset
+sed -e "s#/storage/usb0 /storage/usb1#$WS/usb0 $WS/usb1#" \
+  -e "s#/proc/mounts#$WS/mounts#" \
+  -e "s#/data/nemesis/logs/korea\.projection/ap\.log#$WS/logs/ap.log#" \
+  $PKG/bin/status.sh > $WS/st.sh
+echo "/dev/block/sda1 $WS/usb0 vfat rw 0 0" > $WS/mounts
+echo DEPEHEV.KOR.0000.V039.001.260902 > $WS/prop.product
+: > $WS/usb0/kp-wide-off
+rm -f $WS/calls
+ws_st
+check "  status.sh: 비대상 차(DEPEHEV)는 kp-wide-off 무시·와이드 settings 조회 0회·리포트 와이드 줄 생략" '
+  [ ! -e $WS/bk/wide-off ] &&
+  ! grep -q "와이드스크린" $WS/stout $WS_R &&
+  ! grep -qE "carplay_information|carplay_ss_osd|androidauto_ss_osd|phoneprojection_setting" $WS/calls 2>/dev/null &&
+  ! grep -qE "와이드스크린 설정:|시스템 설정 백업\(sys\.orig\):" $WS_R'
+
+# 8) preun.sh: 업그레이드 보존, 전체 삭제 복원(content delete & put), 외부 변경 미덮어쓰기, 오류 시 modmsg 경고, toolbox-only(! has_bb)
+ws_mk_preun() {
+  sed -e "s#^BB=.*#BB=$1#" \
+    -e "s#^BK=.*#BK=$WS/bk#" \
+    -e "s#/data/nemesis/apps/korea\.projection/svc/hotspot\.sh#$WS/app/svc/hotspot.sh; export PATH=$2#" \
+    -e "s#^export PATH=.*#export PATH=$2#" \
+    -e "s#^STAGE=.*#STAGE=$WS/stage#" \
+    -e "s#/data/local/tmp/korea-projection-status#$WS/pstatus#g" \
+    $PKG/scripts/preun.sh > $WS/preun.sh
+}
+ws_pu() {
+  (PATH=$1 HMGDATA=$WS/hd W=$WS/w BK=$WS/bk PROC=$WS/proc PROG=$WS/prog BOOT_ID=$WS/bootid \
+   CONF=$WS/hk.conf WCONF=$WS/nowconf NOTICE=$WS/toasts \
+   BB_SYS=$2 BB_OWN=$3 /bin/sh $WS/preun.sh) > $WS/pout 2>&1
+}
+ws_reset; ws_mk_preun "$WS/bin/bb" "$WS/bin:/usr/bin:/bin:/sbin"
+ws_db_set system carplay_ss_osd_dr1 1
+wsl_fn wide_apply >/dev/null 2>&1
+: > $WS/bk/wide-off
+echo id=korea.projection > $WS/stage/NEMESIS.data
+rm -f $WS/calls
+ws_pu "$WS/bin:/usr/bin:/bin:/sbin" "$WS/bin/bb" "$WS/bin/bb"
+check "와이드스크린 preun.sh(업데이트): \$SYSORIG/*와 \$WIDEOFF 보존, settings/content 되돌림 없음" '
+  [ -f $WS/bk/wide-off ] && [ -f $WS/bk/sys.orig/carplay_ss_osd ] &&
+  ! grep -qE "^(settings put|content delete)" $WS/calls 2>/dev/null &&
+  grep -q "업데이트: 이전 버전 정리" $WS/pout'
+
+ws_reset; ws_mk_preun "$WS/bin/bb" "$WS/bin:/usr/bin:/bin:/sbin"
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system androidauto_information_dr1 -1
+ws_db_set system phoneprojection_setting_enable_usb_cable_dr2 0
+wsl_fn wide_apply >/dev/null 2>&1
+wsl_fn usb_guard >/dev/null 2>&1
+ws_db_set system androidauto_ss_osd 1
+ws_pu "$WS/bin:/usr/bin:/bin:/sbin" "$WS/bin/bb" "$WS/bin/bb"; _purc=$?
+check "  preun.sh(전체 삭제): null→content delete, 1/-1/0→put 복원, 외부 변경(androidauto_ss_osd=1) 유지" '
+  [ $_purc = 0 ] &&
+  [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_dr1)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system androidauto_information_dr1)" = -1 ] &&
+  [ "$(ws_db_get system phoneprojection_setting_enable_usb_cable_dr2)" = 0 ] &&
+  [ "$(ws_db_get system androidauto_ss_osd)" = 1 ] &&
+  grep -q "다른 곳에서 바뀜" $WS/pout &&
+  grep -q "korea.projection 삭제 완료" $WS/pout &&
+  [ ! -d $WS/bk ]'
+
+ws_reset; ws_mk_preun "$WS/bin/bb" "$WS/bin:/usr/bin:/bin:/sbin"
+wsl_fn wide_apply >/dev/null 2>&1
+mv $WS/bin/settings $WS/settings.off
+ws_pu "$WS/bin:/usr/bin:/bin:/sbin" "$WS/bin/bb" "$WS/bin/bb"; _purc=$?
+mv $WS/settings.off $WS/bin/settings
+check "  preun.sh: settings 명령 없으면 경고(modmsg) 남기고 삭제 완료(0)" '
+  [ $_purc = 0 ] && grep -q "되돌리지 못했습니다" $WS/pout && grep -q "korea.projection 삭제 완료" $WS/pout'
+
+ws_reset; ws_mk_preun "$WS/bin/bb" "$WS/bin:/usr/bin:/bin:/sbin"
+wsl_fn wide_apply >/dev/null 2>&1
+: > $WS/content.ro
+ws_pu "$WS/bin:/usr/bin:/bin:/sbin" "$WS/bin/bb" "$WS/bin/bb"; _purc=$?
+rm -f $WS/content.ro
+check "  preun.sh: content delete readback 실패 시 경고(modmsg) 남기고 삭제 완료(0)" '
+  [ $_purc = 0 ] && grep -q "되돌리지 못했습니다" $WS/pout && grep -q "korea.projection 삭제 완료" $WS/pout'
+
+ws_reset; ws_mk_preun "$WS/none" "$WS/tb"
+ws_db_set system carplay_ss_osd_dr1 1
+ws_db_set system androidauto_information_dr1 -1
+wsl_fn wide_apply >/dev/null 2>&1
+wsl_fn usb_guard >/dev/null 2>&1
+ws_pu "$WS/tb" "$WS/none" "$WS/none"; _purc=$?
+check "  preun.sh(toolbox-only ! has_bb): busybox 없이 모든 \$SYSORIG 복원 + not found 없음 + 삭제 완료(0)" '
+  [ $_purc = 0 ] &&
+  [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_dr1)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system androidauto_information_dr1)" = -1 ] &&
+  ! grep -qE "not found|busybox" $WS/pout &&
+  grep -q "korea.projection 삭제 완료" $WS/pout'
+
+ws_reset
+sed -e "s#/storage/usb0 /storage/usb1#$WS/usb0 $WS/usb1#" \
+  -e "s#/proc/mounts#$WS/mounts#" \
+  -e "s#/data/nemesis/logs/korea\.projection/ap\.log#$WS/logs/ap.log#" \
+  $PKG/bin/status.sh > $WS/st.sh
+echo "/dev/block/sda1 $WS/usb0 vfat rw 0 0" > $WS/mounts
+echo IGPE.KOR.S5W_M.V039.001.260902 > $WS/prop.product
+ws_mk_post "$WS/bin:/usr/bin:/bin:/sbin"
+ws_mk_preun "$WS/bin/bb" "$WS/bin:/usr/bin:/bin:/sbin"
+ws_db_set system carplay_ss_osd_dr1 1
+(BB_SYS=$WS/bin/bb BB_OWN=$WS/bin/bb BOOT_ID=$WS/bootid NOTICE=$WS/toasts W=$WS/w BK=$WS/bk APK_SRC=$WS/no.apk sh $WS/post.sh) > $WS/out 2>&1 || true
+ws_st
+ws_pu "$WS/bin:/usr/bin:/bin:/sbin" "$WS/bin/bb" "$WS/bin/bb"; _s5rc=$?
+check "  IGPE.KOR.S5W_M.V039.001.260902 실차 빌드 종단: 설치(0) → 진단 출력 → 삭제 원복(null·1)" '
+  [ $_s5rc = 0 ] && grep -q "와이드스크린 설정:" $WS_R &&
+  [ "$(ws_db_get system carplay_ss_osd)" = "__ABSENT__" ] &&
+  [ "$(ws_db_get system carplay_ss_osd_dr1)" = 1 ] &&
+  [ "$(ws_db_get system androidauto_information)" = "__ABSENT__" ]'
+
+# 9) 스크립트 위생 검사: CRLF 없음, bare printf 없음, mksh/ksh 구문 검사
+check "와이드스크린 위생 검사: CRLF(\\r) 없음 및 bare printf 없음(hotspot/post/preun/status)" '
+  $PY3 - "$PKG/svc/hotspot.sh" "$PKG/scripts/post.sh" "$PKG/scripts/preun.sh" "$PKG/bin/status.sh" "$B/tests/stub-test.sh" <<'\''PY'\''
+import re, sys
+for p in sys.argv[1:]:
+    data = open(p, "rb").read()
+    if b"\r" in data:
+        sys.stderr.write("CRLF in %s\n" % p)
+        sys.exit(1)
+    if p.endswith("stub-test.sh"):
+        continue
+    text = data.decode("utf-8")
+    in_awk = False
+    for idx, line in enumerate(text.splitlines(), 1):
+        s = line.lstrip()
+        if not s or s.startswith("#"):
+            continue
+        if not in_awk and "$BB awk" in line and line.count("'\''") % 2 == 1:
+            in_awk = True
+            continue
+        if in_awk:
+            if line.count("'\''") % 2 == 1:
+                in_awk = False
+            continue
+        # 한 줄짜리 $BB awk '\''...'\'' 블록만 잠시 치워 검사한다
+        cleaned = re.sub(r"\$BB awk(?:\s+-[^'\'']+)*\s+'\''[^'\'']*'\''", "", line)
+        # 따옴표 밖 주석(# ...) 제거 후 모든 printf 토큰에 $BB 접두가 있는지 확인
+        code = re.sub(r"(^|\s)#.*$", "", cleaned)
+        for m in re.finditer(r"(?<![A-Za-z0-9_])printf\b", code):
+            if not code[:m.start()].endswith("$BB "):
+                sys.stderr.write("bare printf in %s:%d: %s\n" % (p, idx, line))
+                sys.exit(1)
+PY'
+
 echo "---"
 [ $fails -eq 0 ] && echo "모두 통과" || { echo "실패 $fails개"; exit 1; }

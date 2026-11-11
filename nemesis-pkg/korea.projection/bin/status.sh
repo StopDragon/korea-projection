@@ -91,17 +91,41 @@ if ! has_bb; then
   fi
   exit 0
 fi
-# 1.7.0 무선 안드로이드 오토(기본 켜짐) 끄기·켜기: Launch 때 USB 맨 위의 kp-aa-off(끔, 먼저 봄) 또는 kp-aa-on(다시 켬).
-# 끌 때는 신호를 여기서 바로 내린다(켤 때는 서비스가 30초 안에 맞춘다). 토스트는 쓰지 않는다(소유자 결정): 상태 화면·리포트에 보인다.
+# 1.7.0 무선 안드로이드 오토(기본 켜짐) · 와이드스크린(1920x720, IGPE.KOR.*.260902 기본 켜짐) 끄기·켜기:
+# Launch 때 마운트된 USB 맨 위의 kp-aa-off/kp-aa-on, kp-wide-off/kp-wide-on을 서로 독립적으로 처리한다(어느 USB든 끄기 우선).
+_aao=0; _aaon=0; _wo=0; _won=0
 for u in $USBS; do
   bbx grep -q " $u " /proc/mounts 2>/dev/null || continue
-  if [ -f $u/kp-aa-off ]; then
-    bbx mkdir -p $BK 2>/dev/null; : > $AAOFF; aa_sig 0 off
-  elif [ -f $u/kp-aa-on ]; then
-    rm -f $AAOFF
-  fi
-  break
+  [ -f $u/kp-aa-off ] && _aao=1
+  [ -f $u/kp-aa-on ] && _aaon=1
+  [ -f $u/kp-wide-off ] && _wo=1
+  [ -f $u/kp-wide-on ] && _won=1
 done
+if [ $_aao = 1 ]; then
+  bbx mkdir -p $BK 2>/dev/null; : > $AAOFF; aa_sig 0 off
+elif [ $_aaon = 1 ]; then
+  rm -f $AAOFF
+fi
+_wmsg=
+if [ $_wo = 1 ] || [ $_won = 1 ]; then
+  if wide_supported || { [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; } || { [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; }; then
+    if [ $_wo = 1 ]; then
+      [ -L "$WIDEOFF" ] && rm -f "$WIDEOFF"
+      _wchg=0; [ -f "$WIDEOFF" ] || _wchg=1
+      [ "${WIDEOFF%/*}" != "$WIDEOFF" ] && [ -n "${WIDEOFF%/*}" ] && bbx mkdir -p "${WIDEOFF%/*}" 2>/dev/null
+      : > "$WIDEOFF"
+      if wide_restore; then _wmsg="와이드스크린(1920x720) 끔"
+      else _wmsg="와이드스크린(1920x720) 끔(일부 설정 되돌리지 못함)"; fi
+      [ $_wchg = 1 ] && notice "Korea Projection: $_wmsg"
+    elif [ $_won = 1 ]; then
+      _wchg=0; [ -f "$WIDEOFF" ] && _wchg=1
+      rm -f "$WIDEOFF"
+      if wide_apply; then _wmsg="와이드스크린(1920x720) 켬"
+      else _wmsg="와이드스크린(1920x720) 켬(일부 설정 적용 실패)"; fi
+      [ $_wchg = 1 ] && notice "Korea Projection: $_wmsg"
+    fi
+  fi
+fi
 # 표준입력의 마지막 $1줄만 내면서 휴대폰 블루투스 주소(MAC)와 IP 주소를 x로 지운다(busybox tail 대신 awk)
 lastmask() {
   # n = n + 0: 오래된 busybox awk에서 -v 값이 문자열로 비교되지 않게 숫자로 만든다
@@ -245,12 +269,54 @@ diag() {
   _au=$(conf_auth $SRC)
   echo "- softap.conf 인증 종류 값(카플레이 SSID 다음 정수, 니로 4): ${_au:-읽지 못함}"
   echo "- 무선 모드 기록: mod.ours $(yn [ -f $BK/mod.ours ]), mod.pin $(yn [ -f $BK/mod.pin ])"
-  # AA 문 3(canStartConnection) 진단: Settings.System androidauto_information(_dr1·_dr2). 값은 영문·숫자 8자까지만
-  _ai=; for _k in androidauto_information androidauto_information_dr1 androidauto_information_dr2; do
-    _v=$(settings get system $_k 2>/dev/null | $BB awk '{ gsub(/[^0-9A-Za-z]/, ""); print substr($0, 1, 8); exit }')
-    _ai="$_ai${_ai:+ / }${_v:-없음}"
-  done
-  echo "- AA 설정값(androidauto_information / _dr1 / _dr2): $_ai"
+  # AA 문 3(canStartConnection) 진단: Settings.System androidauto_information(_dr1·_dr2). 값은 영문·숫자 8자까지만 (-1 부호 유지)
+  _zwarn=
+  _sys3() {
+    _r3=
+    for _k in "$1" "${1}_dr1" "${1}_dr2"; do
+      _v=$(settings get system "$_k" 2>/dev/null | $BB awk '{ gsub(/[^0-9A-Za-z-]/, ""); print substr($0, 1, 8); exit }')
+      [ "$2" = warn ] && [ "$_v" = 0 ] && _zwarn="$_zwarn${_zwarn:+, }$_k=0"
+      _r3="$_r3${_r3:+ / }${_v:-없음}"
+    done
+  }
+  _sys3 androidauto_information warn
+  echo "- AA 설정값(androidauto_information / _dr1 / _dr2): $_r3"
+  _dp=${prod:-$(getprop ro.build.product 2>/dev/null)}
+  # 비대상 차종(CARS_WIDE 외)은 추가 settings 호출과 와이드 진단 줄을 내지 않는다(기존 동작·속도 유지)
+  if car_in "$_dp" "$CARS_WIDE" || { [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; } || { [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; }; then
+    _sys3 carplay_information warn
+    echo "- 카플레이 설정값(carplay_information / _dr1 / _dr2): $_r3"
+    _ds=$(getprop ro.device.splitscreen 2>/dev/null | $BB awk '{ gsub(/[^0-9A-Za-z._-]/, ""); print substr($0, 1, 24); exit }')
+    _st=$(getprop ro.product.opt.stepofspec 2>/dev/null | $BB awk '{ gsub(/[^0-9A-Za-z._-]/, ""); print substr($0, 1, 24); exit }')
+    _up=$(getprop ro.product.opt.useppsettings 2>/dev/null | $BB awk '{ gsub(/[^0-9A-Za-z._-]/, ""); print substr($0, 1, 24); exit }')
+    _wide_off() { [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; }
+    echo "- 와이드스크린 설정: 끄기 파일(kp-wide-off) $(yn _wide_off), ro.device.splitscreen=${_ds:-없음}, ro.product.opt.stepofspec=${_st:-없음}, ro.product.opt.useppsettings=${_up:-없음}"
+    _sys3 carplay_ss_osd
+    echo "- 카플레이 분할화면(carplay_ss_osd / _dr1 / _dr2): $_r3"
+    _sys3 androidauto_ss_osd
+    echo "- AA 분할화면(androidauto_ss_osd / _dr1 / _dr2): $_r3"
+    _sys3 phoneprojection_setting_enable_usb_cable
+    echo "- 통합 유선 설정(phoneprojection_setting_enable_usb_cable / _dr1 / _dr2): $_r3"
+    _sys3 phoneprojection_setting_use_split_screen
+    echo "- 통합 분할화면(phoneprojection_setting_use_split_screen / _dr1 / _dr2): $_r3"
+    _so_list=
+    if [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; then
+      case $- in *f*) _sdf=1; set +f ;; *) _sdf=0 ;; esac
+      for _sf in "$SYSORIG"/*; do
+        [ ! -L "$_sf" ] && [ -f "$_sf" ] || continue
+        _sk=$($BB printf '%s\n' "${_sf##*/}" | $BB awk '{ gsub(/[^0-9A-Za-z_]/, ""); print substr($0, 1, 64); exit }')
+        [ -n "$_sk" ] || continue
+        _so=; _sa=
+        read _so _sa < "$_sf" 2>/dev/null
+        _so=$($BB printf '%s\n' "$_so" | $BB awk '{ gsub(/[^0-9A-Za-z-]/, ""); print substr($0, 1, 8); exit }')
+        _sa=$($BB printf '%s\n' "$_sa" | $BB awk '{ gsub(/[^0-9A-Za-z-]/, ""); print substr($0, 1, 8); exit }')
+        _so_list="$_so_list${_so_list:+, }$_sk=${_so:-?}->${_sa:-?}"
+      done
+      [ $_sdf = 1 ] && set -f
+    fi
+    echo "- 시스템 설정 백업(sys.orig): ${_so_list:-없음}"
+  fi
+  [ -n "$_zwarn" ] && echo "- **주의: 헤드유닛 프로젝션 설정이 꺼져 있습니다($_zwarn). 유선·무선 연결이 모두 막히므로 내비 설정에서 켜 주세요(kp-aa-off와 다름).**"
   # P-12: Wi-Fi 칩 없음 판정과 순정 기준(module_version 3 = 하드웨어 없음) 근거 한 줄(hotspot.sh wifi_record가 남김)
   _nr=$($BB grep '^판정 근거: ' $NOCHIP_LOG $BK/nochip-wifi.txt 2>/dev/null | $BB awk '{ sub(/^[^:]*nochip-wifi\.txt:/, ""); l = $0 } END { print l }')
   echo "- Wi-Fi 칩 없음 기록(wifi.nochip): $(yn [ -f $BK/wifi.nochip ]), 다시 확인함(nochip.rechk): $(yn [ -f $BK/nochip.rechk ]), ${_nr:-판정 근거: 기록 없음}"
@@ -566,6 +632,7 @@ else
   d=꺼짐; our_dhcp_on && d=켜짐
   m="Korea Projection: 핫스팟 $a, DHCP $d, 카플레이 연결 $c개"
 fi
+[ -n "$_wmsg" ] && m="$m. $_wmsg"
 usb_in && m="$m. 제보 자료를 USB의 $RDIR 폴더에 저장하는 중입니다(화면에 진행이 보입니다)."
 echo "$m"
 exit 0

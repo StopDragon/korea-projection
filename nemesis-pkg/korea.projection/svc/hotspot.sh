@@ -63,6 +63,11 @@ CARS_OK='DEPEHEV.KOR.*.260902'
 CARS_TRY='DN822HEV.KOR.*.260902 IGPEHEV.KOR.*.260902 JSN.KOR.*.260902 IGPE.KOR.*.260902'
 CARS_AUTO='*.KOR.*'
 CARS="$CARS_OK $CARS_TRY $CARS_AUTO"
+# 와이드스크린(1920x720)·유선 USB 보호: 실차 검증된 그랜저 IG(IGPE.KOR.*.260902, 분할화면 가능)에서만
+# 1920x720 전체화면과 유선 프로젝션 설정을 지킨다. 끄기: kp-wide-off → $WIDEOFF, 원래 값: $SYSORIG/<키>.
+CARS_WIDE=${CARS_WIDE:-'IGPE.KOR.*.260902'}
+WIDEOFF=${WIDEOFF:-${BK:-/data/nemesis/backup/korea.projection}/wide-off}
+SYSORIG=${SYSORIG:-${BK:-/data/nemesis/backup/korea.projection}/sys.orig}
 # $1(제품명)이 $2(공백으로 나눈 패턴 목록)의 하나와 맞는가.
 # case 패턴에는 변수로 '|'를 넘길 수 없어 하나씩 본다. 목록을 나눌 때 '*'가 파일 이름으로 풀리지 않게
 # 잠시 set -f 한다(이미 -f면 그대로 둔다).
@@ -747,6 +752,287 @@ apon_restore() {
   fi
   rm -f $APON_ORIG
   return 0
+}
+
+# --- 와이드스크린(1920x720)·유선 USB 프로젝션 시스템 설정 도우미 (IGPE.KOR.*.260902) ---
+# KitKat /system/bin/settings에는 delete/list가 없고 put ... null은 문자열 "null"을 남기므로
+# 원래 없던(null) 키를 되돌릴 때는 content delete를 쓰고, 모든 쓰기·삭제 뒤 get으로 다시 확인한다.
+# post.sh·preun.sh(! has_bb 포함)에서도 부르므로 busybox 없이 순수 셸과 settings·content·getprop만 쓴다.
+wide_supported() {
+  _ws_prod=${prod:-$(getprop ro.build.product 2>/dev/null)}
+  car_in "$_ws_prod" "$CARS_WIDE" || return 1
+  case "$(getprop ro.device.splitscreen 2>/dev/null)" in ''|0|disable) return 1 ;; esac
+  return 0
+}
+
+usb_guard_supported() {
+  _ugs_prod=${prod:-$(getprop ro.build.product 2>/dev/null)}
+  car_in "$_ugs_prod" "$CARS_WIDE"
+}
+
+sys_get() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  command -v settings >/dev/null 2>&1 || return 1
+  _sg_out=$(settings get system "$1" 2>/dev/null) || return 1
+  case $- in *f*) _sg_f=0 ;; *) _sg_f=1; set -f ;; esac
+  set -- $_sg_out
+  if [ $_sg_f = 1 ]; then set +f; fi
+  [ $# -eq 1 ] || return 1
+  case "$1" in
+    null) echo null; return 0 ;;
+    *)
+      case "${1#-}" in ''|*[!0-9]*) return 1 ;; esac
+      echo "$1"; return 0 ;;
+  esac
+}
+
+sys_put() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  case "${2#-}" in ''|*[!0-9]*) return 1 ;; esac
+  command -v settings >/dev/null 2>&1 || return 1
+  settings put system "$1" "$2" >/dev/null 2>&1 || return 1
+  _sp_rb=$(sys_get "$1") || return 1
+  [ "$_sp_rb" = "$2" ]
+}
+
+sys_del() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  command -v content >/dev/null 2>&1 || return 1
+  command -v settings >/dev/null 2>&1 || return 1
+  content delete --uri content://settings/system --where "name='$1'" >/dev/null 2>&1 || return 1
+  _sd_rb=$(sys_get "$1") || return 1
+  [ "$_sd_rb" = null ]
+}
+
+sys_guard_set() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  case "${2#-}" in ''|*[!0-9]*) return 1 ;; esac
+  if [ -L "$SYSORIG" ] || { [ -e "$SYSORIG" ] && [ ! -d "$SYSORIG" ]; }; then
+    log "시스템 설정 백업 폴더가 올바르지 않아 건너뜀: $SYSORIG"
+    return 1
+  fi
+  _sgs_f="$SYSORIG/$1"
+  if [ -L "$_sgs_f" ] || { [ -e "$_sgs_f" ] && [ ! -f "$_sgs_f" ]; }; then
+    log "시스템 설정 백업 파일이 올바르지 않아 건너뜀: $1"
+    return 1
+  fi
+  if ! command -v settings >/dev/null 2>&1; then
+    log "시스템 설정($1) 맞추기 건너뜀: settings 명령 없음"
+    return 1
+  fi
+  _sgs_cur=$(sys_get "$1") || { log "시스템 설정($1) 값을 읽지 못함"; return 1; }
+  if [ -f "$_sgs_f" ]; then
+    _sgs_orig=; _sgs_prev=
+    read _sgs_orig _sgs_prev < "$_sgs_f"
+    case "$_sgs_orig" in
+      null) ;;
+      *) case "${_sgs_orig#-}" in ''|*[!0-9]*) _sgs_orig=$_sgs_cur ;; esac ;;
+    esac
+  else
+    _sgs_orig=$_sgs_cur
+  fi
+  if [ "$_sgs_cur" = "$2" ]; then
+    if [ -f "$_sgs_f" ] && [ "$_sgs_prev" != "$2" ]; then
+      echo "$_sgs_orig $2" > "$_sgs_f" || return 1
+    fi
+    return 0
+  fi
+  if ! sys_put "$1" "$2"; then
+    _sgs_now=$(sys_get "$1" 2>/dev/null)
+    log "시스템 설정($1)을 $2(으)로 바꾸지 못함(지금 값 ${_sgs_now:-읽기실패})"
+    return 1
+  fi
+  mkdir -p "$SYSORIG" 2>/dev/null || { log "시스템 설정 백업 폴더를 만들지 못함: $SYSORIG"; return 1; }
+  echo "$_sgs_orig $2" > "$_sgs_f" || { log "시스템 설정 백업 쓰기 실패: $1"; return 1; }
+  log "시스템 설정($1) $_sgs_cur → $2 (원래 값 $_sgs_orig)"
+  return 0
+}
+
+sys_init_if_unset() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  case "${2#-}" in ''|*[!0-9]*) return 1 ;; esac
+  _si_cur=$(sys_get "$1") || { log "시스템 설정($1) 값을 읽지 못함"; return 1; }
+  case "$_si_cur" in
+    0)
+      log "주의: $1=0 (헤드유닛 설정에서 꺼져 있어 그대로 둠)"
+      return 0 ;;
+    1)
+      return 0 ;;
+    *)
+      sys_guard_set "$1" "$2"
+      return $? ;;
+  esac
+}
+
+sys_restore_key() {
+  case "$1" in ''|*[!A-Za-z0-9_]*) return 1 ;; esac
+  if [ -L "$SYSORIG" ]; then
+    log "시스템 설정($1) 되돌리기 건너뜀: 백업 폴더가 심볼릭 링크"
+    return 1
+  fi
+  _srk_f="$SYSORIG/$1"
+  if [ -L "$_srk_f" ]; then
+    log "시스템 설정($1) 되돌리기 건너뜀: 백업 파일이 심볼릭 링크"
+    return 1
+  fi
+  [ -f "$_srk_f" ] || return 0
+  _srk_orig=; _srk_app=
+  read _srk_orig _srk_app < "$_srk_f"
+  case "$_srk_orig" in
+    null) ;;
+    *) case "${_srk_orig#-}" in ''|*[!0-9]*) log "시스템 설정($1) 되돌리기 건너뜀: 백업 기록이 올바르지 않음"; rm -f "$_srk_f"; return 1 ;; esac ;;
+  esac
+  case "${_srk_app#-}" in
+    ''|*[!0-9]*) log "시스템 설정($1) 되돌리기 건너뜀: 백업 기록이 올바르지 않음"; rm -f "$_srk_f"; return 1 ;;
+  esac
+  if ! command -v settings >/dev/null 2>&1; then
+    log "시스템 설정($1) 되돌리기 건너뜀: settings 명령 없음"
+    return 1
+  fi
+  _srk_cur=$(sys_get "$1") || { log "시스템 설정($1) 되돌리기 건너뜀: 값을 읽지 못함"; return 1; }
+  if [ "$_srk_cur" != "$_srk_app" ]; then
+    log "시스템 설정($1) 그대로 둠: 우리가 바꾼 뒤 다른 곳에서 바뀜(지금 값 $_srk_cur)"
+    rm -f "$_srk_f"
+    return 0
+  fi
+  if [ "$_srk_orig" = null ]; then
+    if ! command -v content >/dev/null 2>&1; then
+      log "시스템 설정($1) 되돌리기 건너뜀: content 명령 없음"
+      return 1
+    fi
+    if sys_del "$1"; then
+      log "시스템 설정($1) 되돌림(삭제): $_srk_app → null"
+      rm -f "$_srk_f"
+      return 0
+    fi
+    log "시스템 설정($1)을 되돌리지 못함(삭제 실패)"
+    return 1
+  fi
+  if sys_put "$1" "$_srk_orig"; then
+    log "시스템 설정($1) 되돌림: $_srk_app → $_srk_orig"
+    rm -f "$_srk_f"
+    return 0
+  fi
+  _srk_now=$(sys_get "$1" 2>/dev/null)
+  log "시스템 설정($1)을 되돌리지 못함(지금 값 ${_srk_now:-읽기실패})"
+  return 1
+}
+
+sys_restore_keys() {
+  _srks_rc=0
+  for _srks_k in "$@"; do
+    sys_restore_key "$_srks_k" || _srks_rc=1
+  done
+  return $_srks_rc
+}
+
+sys_restore_all() {
+  if [ -L "$SYSORIG" ]; then
+    log "시스템 설정 되돌리기 건너뜀: 백업 폴더가 심볼릭 링크"
+    return 1
+  fi
+  [ -d "$SYSORIG" ] || return 0
+  case $- in *f*) _sra_f=1; set +f ;; *) _sra_f=0 ;; esac
+  _sra_rc=0
+  for _sra_p in "$SYSORIG"/*; do
+    if [ -L "$_sra_p" ]; then
+      log "시스템 설정(${_sra_p##*/}) 되돌리기 건너뜀: 백업 파일이 심볼릭 링크"
+      _sra_rc=1
+      continue
+    fi
+    [ -f "$_sra_p" ] || continue
+    sys_restore_key "${_sra_p##*/}" || _sra_rc=1
+  done
+  if [ $_sra_f = 1 ]; then set -f; fi
+  rmdir "$SYSORIG" 2>/dev/null || :
+  return $_sra_rc
+}
+
+wide_apply() {
+  wide_supported || return 0
+  if [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; then return 0; fi
+  if ! command -v settings >/dev/null 2>&1; then
+    if [ -z "$_WIDE_NOSET_TOLD" ]; then log "와이드스크린 설정 건너뜀: settings 명령 없음"; fi
+    _WIDE_NOSET_TOLD=1
+    return 1
+  fi
+  _wa_rc=0
+  for _wa_k in carplay_ss_osd carplay_ss_osd_dr1 carplay_ss_osd_dr2 \
+               androidauto_ss_osd androidauto_ss_osd_dr1 androidauto_ss_osd_dr2; do
+    sys_guard_set "$_wa_k" 0 || _wa_rc=1
+  done
+  _wa_upp=$(getprop ro.product.opt.useppsettings 2>/dev/null)
+  if [ "$_wa_upp" = true ]; then
+    for _wa_k in phoneprojection_setting_use_split_screen \
+                 phoneprojection_setting_use_split_screen_dr1 \
+                 phoneprojection_setting_use_split_screen_dr2; do
+      sys_guard_set "$_wa_k" 0 || _wa_rc=1
+    done
+  else
+    for _wa_k in phoneprojection_setting_use_split_screen \
+                 phoneprojection_setting_use_split_screen_dr1 \
+                 phoneprojection_setting_use_split_screen_dr2; do
+      if _wa_v=$(sys_get "$_wa_k"); then
+        if [ "$_wa_v" = 1 ]; then sys_guard_set "$_wa_k" -1 || _wa_rc=1; fi
+      else
+        log "시스템 설정($_wa_k) 값을 읽지 못함"
+        _wa_rc=1
+      fi
+    done
+  fi
+  return $_wa_rc
+}
+
+wide_restore() {
+  if [ -L "$SYSORIG" ]; then
+    log "시스템 설정 되돌리기 건너뜀: 백업 폴더가 심볼릭 링크"
+    return 1
+  fi
+  _wr_rc=0
+  sys_restore_keys \
+    carplay_ss_osd carplay_ss_osd_dr1 carplay_ss_osd_dr2 \
+    androidauto_ss_osd androidauto_ss_osd_dr1 androidauto_ss_osd_dr2 \
+    phoneprojection_setting_use_split_screen \
+    phoneprojection_setting_use_split_screen_dr1 \
+    phoneprojection_setting_use_split_screen_dr2 || _wr_rc=1
+  if [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; then
+    rmdir "$SYSORIG" 2>/dev/null || :
+  fi
+  return $_wr_rc
+}
+
+usb_guard() {
+  usb_guard_supported || return 0
+  if ! command -v settings >/dev/null 2>&1; then
+    if [ -z "$_USB_NOSET_TOLD" ]; then log "유선 USB 설정 확인 건너뜀: settings 명령 없음"; fi
+    _USB_NOSET_TOLD=1
+    return 1
+  fi
+  _ug_rc=0
+  for _ug_k in androidauto_information androidauto_information_dr1 androidauto_information_dr2 \
+               carplay_information carplay_information_dr1 carplay_information_dr2; do
+    sys_init_if_unset "$_ug_k" 1 || _ug_rc=1
+  done
+  _ug_upp=$(getprop ro.product.opt.useppsettings 2>/dev/null)
+  if [ "$_ug_upp" = true ]; then
+    for _ug_k in phoneprojection_setting_enable_usb_cable \
+                 phoneprojection_setting_enable_usb_cable_dr1 \
+                 phoneprojection_setting_enable_usb_cable_dr2; do
+      sys_init_if_unset "$_ug_k" 1 || _ug_rc=1
+    done
+  else
+    for _ug_k in phoneprojection_setting_enable_usb_cable \
+                 phoneprojection_setting_enable_usb_cable_dr1 \
+                 phoneprojection_setting_enable_usb_cable_dr2; do
+      if _ug_v=$(sys_get "$_ug_k"); then
+        if [ "$_ug_v" = 0 ]; then sys_guard_set "$_ug_k" -1 || _ug_rc=1; fi
+      else
+        log "시스템 설정($_ug_k) 값을 읽지 못함"
+        _ug_rc=1
+      fi
+    done
+  fi
+  return $_ug_rc
 }
 # 대기만 한다. sleep을 뒤에서 돌리고 wait로 기다려야 TERM이 오면 바로 trap이 돈다(앞에서 돌리면 최대 1시간 늦음).
 # mode=restart: 끝내지 않는다(svcmgr가 죽은 횟수를 세지 않게)
@@ -2171,6 +2457,9 @@ main() {
   fi
   car_in "$prod" "$CARS_TRY" && log "시험 지원 차: $prod (차에서 아직 확인되지 않음)"
   trap 'stop_all; log "멈춤"; exit 0' TERM INT HUP
+  # 무선 모드가 준비되기 전에도 대상 차(IGPE.KOR.*.260902)의 유선 1920x720·USB 연결이 바로 동작하게 먼저 맞춘다
+  wide_apply
+  usb_guard
   if ! try_ready "$prod"; then
     log "대기: HMG-API 무선 모드가 설치·켜짐 상태가 아님 (시험 지원 차는 모드가 있어야 핫스팟을 켬)"
     if setup_pending; then
@@ -2265,8 +2554,8 @@ main() {
     n=$((n+1))
     # once an hour: one line with the CarPlay connections
     [ $((n % 120)) -eq 0 ] && log "동작 중: $(cp_count) 개 카플레이 연결"
-    # 1.7.2(P-7, 리뷰 M2): 10분마다 순정 AP 저장값을 다시 본다(0이면 settings get 한 번뿐, 로그 없음)
-    [ $((n % 20)) -eq 0 ] && apon_off
+    # 1.7.2(P-7, 리뷰 M2): 10분마다 순정 AP 저장값과 대상 차 와이드·유선 USB 설정을 다시 본다(바뀌지 않았으면 get만, 로그 없음)
+    [ $((n % 20)) -eq 0 ] && { apon_off; wide_apply; usb_guard; }
   done
 }
 

@@ -5,7 +5,7 @@
 export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
 # busybox는 아래 hotspot.sh가 고른다(내비의 것, 없으면 패키지에 함께 넣은 것: 1.6.x 알파). 비워 두면 고른다.
 BB=
-BK=/data/nemesis/backup/korea.projection
+BK=${BK:-/data/nemesis/backup/korea.projection}
 umask 077
 mkdir -p $BK
 [ -f $BK/wifi_on ] || settings get global wifi_on > $BK/wifi_on 2>/dev/null
@@ -49,4 +49,25 @@ if [ -d /data/nemesis/apps/niro.carplay.hotspot ]; then
   m="Korea Projection: 이전 패키지 niro.carplay.hotspot을 삭제하면 시작합니다."
   notice "$m"
 fi
+# 그랜저 IG(IGPE.KOR.*.260902): 와이드스크린(1920x720) 및 유선 보호 (비대상 차는 건드리지 않음, toolbox 전용)
+if wide_supported || { [ ! -L "$SYSORIG" ] && [ -d "$SYSORIG" ]; } || { [ ! -L "$WIDEOFF" ] && [ -f "$WIDEOFF" ]; }; then
+  USBS=${USBS:-"/storage/usb0 /storage/usb1"}
+  _wo=0; _won=0
+  for _u in $USBS; do
+    [ -f "$_u/kp-wide-off" ] && _wo=1
+    [ -f "$_u/kp-wide-on" ] && _won=1
+  done
+  _wf=${WIDEOFF:-$BK/wide-off}
+  if [ $_wo = 1 ]; then
+    [ "${_wf%/*}" != "$_wf" ] && [ -n "${_wf%/*}" ] && mkdir -p "${_wf%/*}" 2>/dev/null
+    [ -L "$_wf" ] && rm -f "$_wf"
+    : > "$_wf"; echo "와이드스크린(1920x720) 끔"
+  elif [ $_won = 1 ]; then rm -f "$_wf"; echo "와이드스크린(1920x720) 켬"; fi
+  if [ ! -L "$_wf" ] && [ -f "$_wf" ]; then
+    wide_restore || echo "와이드스크린 설정 되돌리기 건너뜀"
+  else
+    wide_apply || echo "와이드스크린 설정 적용 건너뜀(서비스 시작 후 다시 시도)"
+  fi
+fi
+usb_guard || echo "유선 프로젝션 설정 보호 건너뜀(서비스 시작 후 다시 시도)"
 exit 0

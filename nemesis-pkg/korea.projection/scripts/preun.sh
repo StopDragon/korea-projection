@@ -7,7 +7,7 @@ export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
 umask 077
 # busybox는 아래 hotspot.sh가 고른다(내비의 것, 없으면 패키지에 함께 넣은 것: 1.6.x 알파)
 BB=
-BK=/data/nemesis/backup/korea.projection
+BK=${BK:-/data/nemesis/backup/korea.projection}
 HOTSPOT_LIB=1 . /data/nemesis/apps/korea.projection/svc/hotspot.sh
 # 쓸 수 있는 busybox가 없는 내비는 우리 hostapd를 켠 적이 없다: 오류 줄만 나오므로 건너뛴다
 has_bb && stop_all
@@ -98,6 +98,7 @@ fi
 # (다른 곳에서 바꿨으면 그대로 둔다). 다음 부팅부터 순정이 예전처럼 AP를 복구한다. 업데이트 때는 위에서 이미 끝났다.
 # 되돌리지 못하면(settings 없음·실패) 기록은 아래에서 $BK와 함께 지워지므로 삭제 출력에 남긴다(리뷰 L1).
 apon_restore || modmsg="$modmsg 순정 핫스팟 저장값(wifi_ap_on)을 되돌리지 못했습니다. 무선 카플레이가 안 되면 제보해 주세요."
+sys_restore_all || modmsg="$modmsg 일부 시스템 설정(와이드/USB)을 되돌리지 못했습니다."
 rm -rf $BK
 # 1.7.1: 토스트는 쓰지 않는다(상태 화면 앱도 함께 지워지므로 NEMESIS 삭제 출력으로만 알린다). 알림 기록도 지운다.
 rm -f $NOTICE $NOTICE.tmp
