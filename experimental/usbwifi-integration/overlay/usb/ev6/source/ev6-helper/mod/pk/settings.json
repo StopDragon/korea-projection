@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "settings": [
+    {
+      "key": "enabled",
+      "type": "toggle",
+      "default": true,
+      "title": "Start wireless Android Auto again when the dongle's access point comes up",
+      "apply": "restart"
+    },
+    {
+      "key": "bt_reconnect",
+      "type": "toggle",
+      "default": true,
+      "title": "Last resort: reconnect the phone's Bluetooth when wireless Android Auto stays stuck (music and calls pause a few seconds; never during a call)",
+      "apply": "restart"
+    },
+    {
+      "key": "hide_plug_notices",
+      "type": "toggle",
+      "default": true,
+      "title": "Hide the two notices when the USB Wi-Fi dongle is plugged in ('charging only' and 'unsupported media device')",
+      "apply": "restart"
+    }
+  ]
+}

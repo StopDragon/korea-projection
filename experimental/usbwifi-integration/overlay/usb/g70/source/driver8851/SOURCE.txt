@@ -1,0 +1,13 @@
+8851bu.ko for 3.18.24-tcc (Telechips tcc803x), GPL-2.0, EXPERIMENTAL (not tested with the real dongle)
+sha256 10cc0f42f1e3f7b7884d526b92673a1aead52e3e60f1153db4aa734cfbac2006  size 5640776
+source  https://github.com/fofajardo/rtl8851bu.git
+commit  9e37e7a1101316a05d5daede91549ea779b64539
+patches (applied in this order, shipped next to this file):
+  0001-build-ev6-tcc803x.patch  sha256 cb3b16413592f311183e9cd81ff495b79c5b359ec23dae9642b882284996817e
+  0002-block-usbfs-while-bound.patch  sha256 0c01279cd4677d821efe9ba8de44caa9f4121338d01c0b52990130e92ccdfd3b
+  0003-surprise-removal-guards.patch  sha256 0798d367fa5a2451a54d431e5f403c29f55d234cb935a2257f66e0c8a92eef65
+  0004-linux318-gcc47-compat.patch  sha256 2f88b941789d8c6d685caebc7368e9638ad076db708e64cf87a4cb9074670b56
+  0005-rtl8831bu-id-table.patch  sha256 1d29ab3ece056995a56a1f4adb1430761d39c400e4612ab333aba9eacc9a498b
+kernel  linux-3.18.24 (sha256 ed54cf8c3ac6b95fc17b07b3a236bc42719c96fee08fe696cabfb5b8e07f8c1b), car .config sha256 d35af8a0e9d098a47720ea66de594f21691d3d9608ce388ed199e0a5f82f9913
+toolchain https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-eabi-4.7 @ 8b880805d454664b3eed11d0f053cdeafa1ff06e
+vermagic 3.18.24-tcc SMP preempt mod_unload ARMv7 p2v8 

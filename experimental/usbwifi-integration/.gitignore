@@ -1,0 +1,7 @@
+/pkg/
+/dist/
+/inputs/
+__pycache__/
+*.pyc
+.DS_Store
+/pkg.preparing/

@@ -1,0 +1,174 @@
+--- a/svc/core-native.sh
++++ b/svc/core-native.sh
+@@ -7,7 +7,7 @@
+ # keeps them up. Output goes to /data/nemesis/logs/korea.projection/ap.log; the passphrase
+ # is never written there.
+ # Test hooks: HOTSPOT_LIB=1 only defines the functions; BB, SRC, CONF, W, PROP override paths.
+-export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
++export PATH=${KP_PERSONAL_TEST_PATH:-/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin}
+ APP=${APP:-/data/nemesis/apps/korea.projection}
+ # busybox 고르기(1.6.0). 내비에 busybox(1.8.1)가 있으면 지금처럼 그것을 쓴다(니로 등 확인된 차는 바뀌지 않음).
+ # 없는 내비(K3 BDPE·K8 GL3HEV, tcc803x, #15·#19)는 패키지에 함께 넣은 busybox(1.36.1, bin/busybox)를 쓴다.
+--- a/svc/core-g70.sh
++++ b/svc/core-g70.sh
+@@ -7,7 +7,7 @@
+ # keeps them up. Output goes to /data/nemesis/logs/korea.projection/ap.log; the passphrase
+ # is never written there.
+ # Test hooks: HOTSPOT_LIB=1 only defines the functions; BB, SRC, CONF, W, PROP override paths.
+-export PATH=/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
++export PATH=${KP_PERSONAL_TEST_PATH:-/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin}
+ APP=${APP:-/data/nemesis/apps/korea.projection}
+ # busybox 고르기(1.6.0). 내비에 busybox(1.8.1)가 있으면 지금처럼 그것을 쓴다(니로 등 확인된 차는 바뀌지 않음).
+ # 없는 내비(K3 BDPE·K8 GL3HEV, tcc803x, #15·#19)는 패키지에 함께 넣은 busybox(1.36.1, bin/busybox)를 쓴다.
+@@ -222,7 +222,7 @@
+ ssid=$S2
+ channel=149
+ hw_mode=a
+-ht_capab=[HT40+][SHORT-GI-20][SHORT-GI-40]
++ht_capab=${KP_HT_CAPS:-[HT40+][SHORT-GI-20][SHORT-GI-40]}
+ ieee80211n=1
+ max_num_sta=5
+ ignore_broadcast_ssid=0
+@@ -273,12 +273,34 @@
+     [ -n "$HC" ] && { HC=; HC_T=; hint_write; }
+     return 0
+   fi
+-  if [ "$(cp_count)" != 0 ]; then
+-    # 연결 중: 새 값은 기억만 하고 지금 설정은 그대로(다음 점검에서 다시 비교). 안내·로그는 한 번만
++  # v6: a first-registration request can rotate ConnectivitySSID/PSK
++  # during the Bluetooth->Wi-Fi handover. Do not restart the live AP while
++  # component-4 iAP2 is still negotiating. This is a bounded 90-second hold;
++  # later retries use the updated credentials if CarPlay never activates.
++  _usb_bt_hold=0
++  if usb_own_ap_path && [ -n "${USB_HO_BT_AT:-}" ]; then
++    kp_up
++    case "$_U:$USB_HO_BT_AT" in
++      *[!0-9:]*|:*) ;; 
++      *) [ "$_U" -ge "$USB_HO_BT_AT" ] && [ $((_U - USB_HO_BT_AT)) -lt 90 ] && _usb_bt_hold=1 ;;
++    esac
++  fi
++  # v11 NX4HEV USB: an iAP2 Bluetooth session is negotiating BEFORE a
++  # CarPlay TCP session exists. v10 forced the 90-second guard off whenever
++  # cp_count=0, precisely the normal initial handover state. Honor the
++  # existing bounded guard: keep the AP alive during Wi-Fi transition, but
++  # rekey to fresh softap.conf credentials after 90 seconds if still needed.
++  # Other vehicles retain the same established-session handling as v10.
++  _usb_v8_cp=$(cp_count)
++  if [ "$_usb_v8_cp" != 0 ] || [ "$_usb_bt_hold" = 1 ]; then
+     S1=$_o1; S2=$_o2; S3=$_o3; S4=$_o4; NS=$_on; CONF_WAIT_SIG=$_ns
+     if [ "$HC" != wait ]; then
+       HC=wait; HC_T=$(date +%s); hint_write
+-      log "softap.conf의 카플레이 Wi-Fi 설정이 바뀜: 카플레이가 연결되어 있어 연결이 끝나면 핫스팟을 다시 시작함"
++      if [ "$_usb_bt_hold" = 1 ]; then
++        log "USB Wi-Fi 핸드오프 보호: 블루투스 iAP2 연결 중 softap.conf 변경에 따른 AP 재시작을 최대 90초 보류"
++      else
++        log "softap.conf의 카플레이 Wi-Fi 설정이 바뀜: 카플레이가 연결되어 있어 연결이 끝나면 핫스팟을 다시 시작함"
++      fi
+     fi
+     return 0
+   fi
+@@ -704,9 +726,11 @@
+     # 유선이 붙어 있는 동안에는 아이폰 Wi-Fi 안내를 내지 않는다.
+     iap) [ "$IPH_USB" = 1 ] && return 0
+       # 재리뷰 L4: 부팅 뒤 초 기준(못 읽으면 판정하지 않음)
+-      case "$2" in ''|*[!0-9]*) ;; *) kp_up; [ -n "$_U" ] && IPH_AT=$((_U - $2)) ;; esac; return 0 ;;
+-    iapd) IPH_AT=; return 0 ;;
+-    usbon) IPH_USB=1; IPH_AT=
++      case "$2" in ''|*[!0-9]*) ;; *) kp_up; if [ -n "$_U" ]; then
++        IPH_AT=$((_U - $2)); USB_HO_BT_AT=$IPH_AT; USB_HO_PHASE=
++      fi ;; esac; return 0 ;;
++    iapd) IPH_AT=; USB_HO_BT_AT=; USB_HO_PHASE=; return 0 ;;
++    usbon) IPH_USB=1; IPH_AT=; USB_HO_BT_AT=; USB_HO_PHASE=
+       if [ -n "$HI" ]; then HI=; HI_T=; HI_U=; log "안내(상태 화면) 지움: 아이폰 유선 연결"; hint_write; fi
+       return 0 ;;
+     usboff) IPH_USB=; return 0 ;;
+@@ -2184,13 +2208,13 @@
+   echo "$MOD_VER $_un" > $BK/mod.upd
+   # 리뷰 L10: 이번 부팅에 시도했는가(상태 화면이 "바꾸는 중"과 "이번에 못 바꿈, 재부팅하면 다시"를 가른다)
+   echo "${BID:-$(cat $BOOT_ID 2>/dev/null)}" > $BK/mod.try
+-  set -- $($BB md5sum < $KP_HMG/$MOD_ID.zip 2>/dev/null)
++  set -- $($BB md5sum < ${KP_MODE_ZIP:-$KP_HMG/$MOD_ID.zip} 2>/dev/null)
+   if [ "$1" != $MOD_MD5 ]; then
+     log "무선 모드 업데이트 안 함: 패키지의 zip md5가 다름 (${1:-없음})"
+     return 1
+   fi
+   ptrack 70 run "무선 모드를 새 판($MOD_VER)으로 바꾸는 중입니다"
+-  if ! hmgapid engine install $KP_HMG/$MOD_ID.zip > $W/mod-update.txt 2>&1; then
++  if ! hmgapid engine install ${KP_MODE_ZIP:-$KP_HMG/$MOD_ID.zip} > $W/mod-update.txt 2>&1; then
+     log "무선 모드 업데이트 실패($_un/3), 이전 판($_iv) 그대로 ($W/mod-update.txt)"
+     [ $_un -lt 3 ] && return 1
+     LAST_MSG="무선 모드를 새 판으로 바꾸지 못했습니다. 카플레이는 이전 판으로 계속 됩니다."
+@@ -2398,7 +2422,7 @@
+   # mod.tried는 설치에 성공했거나 다시 해도 같은 결과일 때(zip md5 다름)만 남긴다. 일시적인 실패
+   # (앞의 apply가 안 끝남, 데몬이 바쁨)는 다음 부팅에 다시 한다.
+   if [ $_mapbad = 0 ] && [ ! -f $HMGDATA/mods/$MOD_ID/mod.json ] && [ ! -f $BK/mod.tried ]; then
+-    set -- $($BB md5sum < $KP_HMG/$MOD_ID.zip 2>/dev/null)
++    set -- $($BB md5sum < ${KP_MODE_ZIP:-$KP_HMG/$MOD_ID.zip} 2>/dev/null)
+     if [ "$1" != $MOD_MD5 ]; then
+       : > $BK/mod.tried
+       log "무선 모드 설치 안 함: 패키지의 zip md5가 다름 (${1:-없음})"
+@@ -2421,7 +2445,7 @@
+         # 1.7.4(P-4): 칩을 본 기록(wifi.woke)은 있는데 지금 칩이 없다(다시 깨우지 않음). 예전에는 이유 없이 "넣지 못했습니다"
+         _wstop=1; LAST_MSG="$WIFIGONE_MSG"
+       fi
+-    elif ptrack 70 run "무선 모드를 설치하는 중입니다"; ! hmgapid engine install $KP_HMG/$MOD_ID.zip > $W/mod-install.txt 2>&1; then
++    elif ptrack 70 run "무선 모드를 설치하는 중입니다"; ! hmgapid engine install ${KP_MODE_ZIP:-$KP_HMG/$MOD_ID.zip} > $W/mod-install.txt 2>&1; then
+       log "무선 모드 설치 실패, 다음 부팅에 다시 함 ($W/mod-install.txt, HMG-API 칩 기록 $([ -f $WIFI_SEEN ] && echo 있음 || echo 없음))"; _fail=1
+       notice "Korea Projection: HMG-API 무선 모드를 설치하지 못했습니다."
+     else
+@@ -2478,7 +2502,7 @@
+   elif [ -f $HMGDATA/mods/$MOD_ID/mod.json ] && [ -z "$LAST_MSG" ]; then
+     ptrack 100 fail "HMG-API 무선 모드가 있지만 꺼져 있거나 적용되지 않았습니다. HMG-API 앱에서 켜고 변경 사항을 적용한 뒤 내비를 재부팅해 주세요."
+   elif [ -z "$LAST_MSG" ] && [ -f $BK/mod.tried ] && [ ! -f $HMGDATA/mods/$MOD_ID/mod.json ] \
+-      && [ "$(set -- $($BB md5sum < $KP_HMG/$MOD_ID.zip 2>/dev/null); echo "$1")" = $MOD_MD5 ]; then
++      && [ "$(set -- $($BB md5sum < ${KP_MODE_ZIP:-$KP_HMG/$MOD_ID.zip} 2>/dev/null); echo "$1")" = $MOD_MD5 ]; then
+     # 1.7.2(P-13, 이슈 #27 약속): 우리가 넣은 모드를 차주가 HMG-API 앱에서 지운 차. mod.tried가 남아 다시 넣지 않는다(차주 선택 존중).
+     # "넣지 못했습니다"로 보이면 실패로 오해하므로 지운 기록과 다시 쓰는 방법을 알린다. (zip md5가 다른 경우는 아래 보통 문구)
+     log "무선 모드 안 넣음: 차주가 HMG-API 앱에서 지운 기록(mod.tried)이 있음"
+@@ -3130,4 +3154,12 @@
+   done
+ }
+ 
++# Personal G70 USB profile: the internal radio worker owns USB preparation.
++# Never re-enable a missing native Wi-Fi chip or restart the Bluetooth HAL.
++take_wlan0() { return 0; }
++apon_off() { return 0; }
++
+ [ "$HOTSPOT_LIB" = 1 ] || main
++
++# Current software path only; driver/USB eligibility was inspected separately.
++usb_own_ap_path() { [ "$KP_PROFILE" != native ] && [ "$KP_PROFILE" != probe-only ]; }
+--- a/scripts/post-native.sh
++++ b/scripts/post-native.sh
+@@ -16,7 +16,7 @@
+ done
+ # 1.7.4(L-9, 소유자 결정): 설치 때 USB의 kp-aa-off·kp-aa-on을 읽던 무선 안드로이드 오토 끄기·켜기를 없앴다(늘 켜짐).
+ # 1.7.3 이하가 남긴 끄기 표시($BK/aa-off)는 서비스가 시작할 때 지운다(hotspot.sh main)
+-HOTSPOT_LIB=1 . /data/nemesis/apps/korea.projection/svc/hotspot.sh
++HOTSPOT_LIB=1 . "${KP_PERSONAL_APP:-/data/nemesis/apps/korea.projection}/svc/hotspot.sh"
+ # busybox가 없는 내비(K3 BDPE·K8 GL3HEV, #15·#19): 무선 설정은 하지 않는다(서비스도 대기만 함). 한 번 알린다
+ # (1.7.1: 토스트 대신 notice: 설치 출력·ap.log·상태 화면 알림 기록).
+ # 상태 화면 앱만 설치한다(1.5.5): 앱이 없으면 Launch 때 NEMESIS가 "Error type 3 … does not exist"를 띄워 안내를 가린다.
+--- a/scripts/preun-native.sh
++++ b/scripts/preun-native.sh
+@@ -8,7 +8,7 @@
+ # busybox는 아래 hotspot.sh가 고른다(내비의 것, 없으면 패키지에 함께 넣은 것: 1.6.x 알파)
+ BB=
+ BK=/data/nemesis/backup/korea.projection
+-HOTSPOT_LIB=1 . /data/nemesis/apps/korea.projection/svc/hotspot.sh
++HOTSPOT_LIB=1 . "${KP_PERSONAL_APP:-/data/nemesis/apps/korea.projection}/svc/hotspot.sh"
+ # 쓸 수 있는 busybox가 없는 내비는 우리 hostapd를 켠 적이 없다: 오류 줄만 나오므로 건너뛴다
+ has_bb && stop_all
+ rm -f $CONF
+@@ -104,9 +104,10 @@
+ fi
+ # Wi-Fi 잠금(1.5.5)을 되돌린다: 설정 파일의 원래 소유자·권한, 치웠던 crc32 파일. 다음 부팅부터 Wi-Fi 서비스가
+ # 원래대로 wpa_supplicant를 띄운다(무선 카플레이 핫스팟은 이 패키지와 함께 없어진다).
++sh "$APP/usb/cleanup-marker.sh"
+ wifi_unlock && echo "Wi-Fi 잠금 되돌림"
+ # 1이 아니면 꺼져 있던 것으로 본다(한 번도 안 켠 차는 null일 수 있다). 기록이 없으면 건드리지 않는다.
+-[ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" != 1 ] && svc wifi disable
++[ "${KP_PERSONAL_USB_ONLY:-0}" != 1 ] && [ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" != 1 ] && svc wifi disable
+ # Wi-Fi 서비스가 있는 차(1.5.4)는 서비스가 Wi-Fi를 꺼 wifi_on이 0으로 바뀌었을 수 있다. 설치 전에 켜져 있었으면
+ # 값만 1로 되돌린다(지금 켜지는 않는다: 껐다 켜면 USB·블루투스가 다시 시작됨). 재부팅하면 원래대로 켜진다.
+ if [ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" = 1 ] && [ "$(settings get global wifi_on 2>/dev/null)" != 1 ]; then

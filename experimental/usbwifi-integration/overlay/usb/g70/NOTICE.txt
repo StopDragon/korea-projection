@@ -1,0 +1,31 @@
+Common USB Wi-Fi integration candidate for Korea Projection 1.7.4.2
+
+The folder name usb/g70 is retained from the original vehicle experiment. The
+active controller now serves all hardware passing the common compatibility
+checks; a vehicle name alone does not authorize a driver or a signed helper.
+Runtime shell/awk and build/test sources are AGPL-3.0-only (COPYING).
+
+Driver binaries are separate GPL-2.0 programs, with complete upstream source
+archives, patches, configuration and build instructions in source/:
+- AC RX-checksum build: cilynx/rtl88x2bu @ fc158d1f71b9e5dfcd1fccaf4d28725b65086e3b,
+  MANN1309 EV6 4.14.0 beta GPL patches 0001-0004; source/driver/.
+- AC baseline: same upstream commit with the original three adaptation patches;
+  source/driver-baseline/. This is the original G70 screen-connection baseline.
+- RTL8831BU/RTL8851BU: fofajardo/rtl8851bu @ 9e37e7a1101316a05d5daede91549ea779b64539,
+  EV6 kernel/USB patches plus the source-built six-ID patch; source/driver8851/.
+The adaptation credits MANN1309 and the original jmk-wifi vehicle driver work.
+Sources: https://github.com/MANN1309/ev6-kr-usbwifi-dongle
+https://github.com/JongMinKim-93/jmk-gen5w-ioniq5
+Each SOURCE.txt records the exact module and patch hashes. The new AX module
+has not been tested in a vehicle. Kernel fingerprints/exports are necessary
+checks and do not prove complete ABI compatibility or AP/display stability.
+
+ctrl-status and ap-capabilities are MIT-0 read-only C clients; matching source,
+license and musl/Zig notices are in source/. No configuration or credentials
+are changed by these clients. Raw user vehicle captures and signing keys are
+not included. This modified integration is not endorsed by the original authors.
+
+The G70 owner reported actual CarPlay display with the older 0.4.0 bridge, then
+frozen/unresponsive video while music continued. The owner forced the disconnect.
+That termination is not classified as spontaneous link loss. The freeze cause
+and the effect of the newer RX-checksum module are still unverified in a vehicle.

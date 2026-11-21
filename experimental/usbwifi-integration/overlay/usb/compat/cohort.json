@@ -1,0 +1,23 @@
+{
+  "cohort": "tcc803x-kor-config1-stock1-common-v2",
+  "module_sha256": "e83a259541547acafe0899a84f5e36ca15f9def6f1f8c7c88c6227e2d1f8a89d",
+  "module_md5": "36f26af089959fa547b7cc30aff445b9",
+  "required_global_exports": 194,
+  "kernel_config_gzip_md5": "1fd51a10a44ae9ff77fa9ecc94192026",
+  "stock_bcmdhd_md5": "7da276f0d683eecc6c302068331ef274",
+  "vehicle_test_of_generic_backend": false,
+  "kernel_abi_proof": "Fingerprint/export match is necessary evidence, not complete ABI proof.",
+  "ax_module_sha256": "10cc0f42f1e3f7b7884d526b92673a1aead52e3e60f1153db4aa734cfbac2006",
+  "ax_module_md5": "240bd8f68869d02aed7cfbd2ff76c805",
+  "ax_required_global_exports": 203,
+  "ax_srcversion": "533BB7E5866E52F63B9ACCB",
+  "ax_usb_ids": [
+    "0bda:b831",
+    "0bda:b851",
+    "2001:332a",
+    "2c4e:0128",
+    "3625:010b",
+    "7392:e611"
+  ],
+  "ax_vehicle_test": false
+}

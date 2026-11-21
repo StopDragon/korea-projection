@@ -1,0 +1,48 @@
+Korea Projection 1.7.4.2 — private user modification, not an official release
+
+Korea Projection: StopDragon/korea-projection, AGPL-3.0. Base sources/assets are
+the user-provided KP 1.7.4 and NX4HEV personal 1.7.4.1 bundles. Original signed
+status APK, BusyBox and both signed wireless-mode archives remain unchanged.
+The new dispatch/supervisor/build/test scripts are AGPL-3.0-only. COPYING is
+included. Preferred runtime shell source is included directly in the package.
+Exact input hashes and module pins are recorded in ORIGINS.json / RELEASE.json.
+
+The previously supplied NX4 GRT binaries and unused EV6 controller/reference
+modules are not redistributed by this integration. Their exact corresponding
+GRT source was not established and no active runtime path uses them.
+Original APK, BusyBox and signed wireless-mode inputs are supplied to prepare.py
+by the builder, verified by SHA-256 and never re-signed here. The NX4 2.4.6 mode
+remains a local input; its exact corresponding hooks source was not established
+for public redistribution. No private package ZIP or its code is committed.
+
+EV6 integration: https://github.com/MANN1309/ev6-kr-usbwifi-dongle
+Pinned commit 90ed243a93b3f1183a288e360daf5bd54da417b3, release v4.14.0 beta.
+Copyright (c) 2026 MANN1309. Its AGPL license, NOTICE, ADDITIONAL-TERMS and helper
+source are retained under usb/ev6/. This modified integration is not endorsed
+by the original authors. It moves paths into KP, checks exact vehicle/USB
+ownership, scopes the signed helper installer, and adds one-port diagnostics.
+The active controller is now the common hardware-selected USB backend on all
+eligible vehicles. The EV6 software-replug controller is not used or redistributed here. The signed
+EV6 helper retains its exact stock-file/spec gate. The original project verified
+Android Auto; the integrated 1.7.4.2 release remains unverified on vehicles.
+
+GPL-2.0 drivers: Realtek / cilynx/rtl88x2bu @
+fc158d1f71b9e5dfcd1fccaf4d28725b65086e3b, EV6 GPL patches including RX checksum
+patch 0004. Original G70 baseline retained separately. Complete source archives,
+patches, configurations, build scripts and GPL texts accompany those modules.
+The original three-patch adaptation credits jmk-wifi:
+https://github.com/JongMinKim-93/jmk-gen5w-ioniq5
+Experimental common RTL8831BU/RTL8851BU module: fofajardo/rtl8851bu @
+9e37e7a1101316a05d5daede91549ea779b64539, GPL-2.0 with supplied vehicle patches plus the source-built six-ID table patch.
+The original EV6 three-ID AX binary is not redistributed or used for b831.
+Primary references for b831 / RTL8851B mapping:
+https://github.com/torvalds/linux/blob/master/drivers/net/wireless/realtek/rtw89/rtw8851bu.c
+https://github.com/biglinux/rtl8831/blob/main/os_dep/linux/usb_intf.c
+AX900mini chipset: https://iptime.com/products/807?pd=1
+
+ctrl-status and ap-capabilities: MIT-0. Corresponding C source and musl/Zig notices are retained
+under usb/g70/source/. It is a read-only STATUS client. Full BusyBox notices
+remain bin/busybox-LICENSE.txt and the USB-level BUSYBOX-LICENSE.txt.
+
+No signing keys, stock firmware binaries, raw user vehicle captures or phone
+identifiers are included. This is an experimental integration proposal, not an official upstream release.

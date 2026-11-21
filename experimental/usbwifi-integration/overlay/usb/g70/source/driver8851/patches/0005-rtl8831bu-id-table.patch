@@ -1,0 +1,27 @@
+Private KP patch: RTL8831BU and confirmed RTL8851B USB IDs
+
+The Realtek-authored upstream Linux rtw8851bu table binds b831/b851,
+D-Link 332a, Mercusys 0128, TP-Link 010b and Edimax e611 to the same
+rtw8851b chip implementation (ff/ff/ff interface only).
+The vendor driver biglinux/rtl8831 likewise maps b831 to RTL8851B.
+This enables a conditional real-hardware trial, not an ABI or AP success claim.
+B832 is RTL8852BU and is deliberately excluded. No binary alias rewriting.
+
+References:
+https://github.com/torvalds/linux/blob/master/drivers/net/wireless/realtek/rtw89/rtw8851bu.c
+https://github.com/biglinux/rtl8831/blob/main/os_dep/linux/usb_intf.c
+https://iptime.com/products/807?pd=1
+
+--- a/os_dep/linux/usb_intf.c
++++ b/os_dep/linux/usb_intf.c
+@@ -173,6 +173,10 @@
+ #ifdef CONFIG_RTL8851B
+ 	/*=== Realtek demoboard ===*/
+ 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB851, 0xff, 0xff, 0xff), .driver_info = RTL8851B},
++	/* RTL8831BU shares RTL8851B implementation; never match RTL8852BU B832. */
++	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB831, 0xff, 0xff, 0xff), .driver_info = RTL8851B},
++	{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x332A, 0xff, 0xff, 0xff), .driver_info = RTL8851B},
++	{USB_DEVICE_AND_INTERFACE_INFO(0x2C4E, 0x0128, 0xff, 0xff, 0xff), .driver_info = RTL8851B},
+ 
+ 	/*=== TP Link TX10UB AX900 ===*/
+ 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_TPLINK, 0x010B, 0xff, 0xff, 0xff), .driver_info = RTL8851B},

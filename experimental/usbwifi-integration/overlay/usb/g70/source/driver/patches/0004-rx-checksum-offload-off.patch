@@ -1,0 +1,34 @@
+usbwifi.hotspot patch 0004: RX TCP checksum offload off (RTL8822B)
+
+Why:
+  With CONFIG_TCP_CSUM_OFFLOAD_RX the driver marks frames that the chip checked as
+  CHECKSUM_UNNECESSARY, so the kernel does not check the TCP checksum itself. Data damaged
+  after the chip's check (USB transfer, RX aggregation) then reaches the application.
+  Car logs 2026-11-17 and 2026-11-20: three wireless Android Auto sessions ended on
+  "SSL3_GET_RECORD: decryption failed or bad record mac" with the phone at -33 dBm.
+
+What changes:
+  include/hal_ic_cfg.h, RTL8822B block: CONFIG_TCP_CSUM_OFFLOAD_RX is no longer defined.
+  The chip's RX checksum engine is not enabled (BIT_TCPOFLD_EN) and every received
+  frame goes up as CHECKSUM_NONE; the kernel checks it and drops a bad segment
+  (counted in /proc/net/snmp Tcp InCsumErrors), and TCP sends it again.
+
+diff --git a/include/hal_ic_cfg.h b/include/hal_ic_cfg.h
+index d30b45b..5fdfa74 100644
+--- a/include/hal_ic_cfg.h
++++ b/include/hal_ic_cfg.h
+@@ -294,7 +294,13 @@
+ 	#if defined(CONFIG_TCP_CSUM_OFFLOAD_TX) && !defined(CONFIG_RTW_NETIF_SG)
+ 		#define CONFIG_RTW_NETIF_SG
+ 	#endif
+-	#define CONFIG_TCP_CSUM_OFFLOAD_RX
++	/* usbwifi.hotspot patch 0004: RX checksum offload off. With it on, a frame the chip
++	 * marks "TCP checksum good" skips the kernel's own check, so data damaged later on the
++	 * way in (USB transfer, RX aggregation) reaches the app as it is. Car logs 2026-11-17 and
++	 * 2026-11-20: Android Auto ended on "SSL3_GET_RECORD: decryption failed or bad record mac"
++	 * (3 of 8 drops) while Wi-Fi was strong. Without it the kernel checks every TCP segment and
++	 * a damaged one is dropped and sent again. */
++	/*#define CONFIG_TCP_CSUM_OFFLOAD_RX*/
+ 
+ 	#define CONFIG_ADVANCE_OTA
+ 

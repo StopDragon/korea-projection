@@ -1,0 +1,77 @@
+EV6 patch 8851-0004: build with Linux 3.18 and gcc 4.7
+
+  - include/osdep_service_linux.h: strscpy() (Linux 4.3) maps to strlcpy() on older kernels.
+  - os_dep/osdep_service_linux.c rtw_warn_on(): the u16 debug counter was incremented through
+    an atomic_t (4-byte) cast, writing past the variable; gcc 4.7 rejects the asm. Plain ++.
+  - phl/test/phl_ps_dbg_cmd.c: own copy of _get_hex_from_string(); the original is only built
+    with CONFIG_PHL_TEST_SUITE, so the module imported a symbol nobody exports (insmod fails).
+
+diff --git a/include/osdep_service_linux.h b/include/osdep_service_linux.h
+index 22140de..7bfe088 100755
+--- a/include/osdep_service_linux.h
++++ b/include/osdep_service_linux.h
+@@ -1128,4 +1128,10 @@ static inline void rtw_dump_stack(void)
+ #endif
+ 
+ void rtw_warn_on(bool condition);
++/* EV6: helpers newer than the car's Linux 3.18 */
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 3, 0)) && !defined(strscpy)
++#include <linux/string.h>
++#define strscpy(dst, src, size) ((ssize_t)strlcpy(dst, src, size))
++#endif
++
+ #endif /* __OSDEP_LINUX_SERVICE_H_ */
+diff --git a/os_dep/osdep_service_linux.c b/os_dep/osdep_service_linux.c
+index b1bc4b1..ece2bee 100644
+--- a/os_dep/osdep_service_linux.c
++++ b/os_dep/osdep_service_linux.c
+@@ -883,7 +883,9 @@ u16 rtw_warn_on_cnt;
+ void rtw_warn_on(bool condition){
+ 	if(condition){
+ 		WARN_ON(condition);
+-		ATOMIC_INC((ATOMIC_T *)&rtw_warn_on_cnt);
++		/* EV6: was an atomic increment of this u16 through an atomic_t (4-byte) cast: it wrote past
++		 * the variable and gcc 4.7 rejects it. A debug counter: a plain increment is enough. */
++		rtw_warn_on_cnt++;
+ 	}
+ }
+ 
+diff --git a/phl/test/phl_ps_dbg_cmd.c b/phl/test/phl_ps_dbg_cmd.c
+index 701687f..c90c850 100644
+--- a/phl/test/phl_ps_dbg_cmd.c
++++ b/phl/test/phl_ps_dbg_cmd.c
+@@ -14,6 +14,34 @@
+  *****************************************************************************/
+ #define _PHL_PS_DBG_CMD_C_
+ #include "../phl_headers.h"
++/* EV6: the debug commands below use _get_hex_from_string(), which phl_dbg_cmd.c only builds with
++ * CONFIG_PHL_TEST_SUITE (off here): the module then imports a symbol nobody exports and insmod fails.
++ * A local copy of the same parser. */
++static bool _ev6_get_hex_from_string(char *szstr, u32 *val)
++{
++	char *p = szstr;
++	int n = 0;
++
++	if (szstr == NULL || val == NULL)
++		return false;
++	*val = 0;
++	while (*p == ' ' || *p == '\t')
++		p++;
++	if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
++		p += 2;
++	for (;; p++, n++) {
++		if (*p >= '0' && *p <= '9')
++			*val = (*val << 4) + (*p - '0');
++		else if (*p >= 'a' && *p <= 'f')
++			*val = (*val << 4) + (*p - 'a' + 10);
++		else if (*p >= 'A' && *p <= 'F')
++			*val = (*val << 4) + (*p - 'A' + 10);
++		else
++			break;
++	}
++	return n > 0;
++}
++#define _get_hex_from_string _ev6_get_hex_from_string
+ #ifdef CONFIG_POWER_SAVE
+ struct phl_ps_cmd_info {
+ 	char name[16];

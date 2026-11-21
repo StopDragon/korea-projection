@@ -1,0 +1,13 @@
+modules/88x2bu.ko: Realtek RTL88x2BU USB Wi-Fi driver, GPL-2.0. Upstream: https://github.com/cilynx/rtl88x2bu
+commit fc158d1f71b9e5dfcd1fccaf4d28725b65086e3b with three GPL patches (tcc803x build, usbfs block while bound,
+surprise-removal guards). The binary and patches are a third-party GPL release (credited in source/driver/README.md);
+their authors are not affiliated with this package and do not endorse it. Full source information, build scripts
+and the GPL text: source/driver/ (SOURCE.txt, README.md, COPYING). sha256 3e78ee38942e08667f68c287f0576ac21855c34cc516710de27cd49fa6137110.
+modules/8851bu.ko (EXPERIMENTAL, not tested with the real dongle): Realtek RTL8851BU USB Wi-Fi driver, GPL-2.0, from
+https://github.com/fofajardo/rtl8851bu commit 9e37e7a1101316a05d5daede91549ea779b64539 with the EV6 patches in
+source/driver8851/patches (build, usbfs block, unplug guards, Linux 3.18/gcc 4.7). Source information: source/driver8851/.
+All other files of this package (scripts, HMG-API mod) are original work of this project, AGPL-3.0.
+
+DISCLAIMER / 면책: This is an unofficial, free, personal project, provided "as is" with no warranty of any kind. Installing it
+modifies the head unit's software. Any problem with your car, head unit, warranty or service is your own responsibility.
+비공식 개인 프로젝트이며 어떤 보증도 없습니다. 설치·사용으로 차량(헤드유닛)에 생기는 모든 문제와 책임은 사용자 본인에게 있습니다.

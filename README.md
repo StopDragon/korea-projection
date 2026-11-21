@@ -233,3 +233,8 @@ NEMESIS Manager → My Packages → **Korea Projection: Wireless for Korean Cars
 ### 후원 해주신 분
 - 아이리어펠님 - 야밤에 출출할때 먹기 좋은 맥도날드 교환권
 - RYUEK님 - 비오늘 날 너무 맛있게 먹으면서 개발했습니다, 뿌링클콤보와 콜라
+
+
+## 공통 USB Wi-Fi 통합 소스 제안 (Draft)
+
+차량/동글의 실제 호환 조건으로 AC·RTL8831BU/RTL8851BU 드라이버를 선택하고 KP 내부에서 연결을 관리하는 [선택형 통합 제안](experimental/usbwifi-integration/README.md)을 별도로 제공합니다. 개인용 1.7.4.2의 소스를 정리한 것이며, 기본 배포나 위 차량별 확인 상태를 변경하지 않습니다. G70 AX900mini 및 통합판 전체의 실차 재검증, 화면 멈춤 원인 확인과 별도 서명 모드의 배포 방식 검토가 남아 있습니다.

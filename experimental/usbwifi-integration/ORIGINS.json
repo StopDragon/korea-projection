@@ -1,0 +1,61 @@
+{
+  "inputs": {
+    "nx4": {
+      "path": "external user-supplied NX4 1.7.4.1 package (not committed)",
+      "sha256": "81b6c37aac3fba261be4576c01be6c286363b5aa2c5669d1e82b2b3427af435b"
+    },
+    "official": {
+      "path": "official v1.7.4 release korea.projection-1.7.4.zip",
+      "sha256": "d33dae33b27cad30d82b47dda557732780b4813c5d0815ed6f22b21c4d0a4315"
+    }
+  },
+  "g70_driver_sha256": "3e78ee38942e08667f68c287f0576ac21855c34cc516710de27cd49fa6137110",
+  "allowed_usb_ids": [
+    "0846:9055",
+    "0b05:1841",
+    "0b05:184c",
+    "0bda:b812",
+    "0bda:b82c",
+    "13b1:0043",
+    "13b1:0045",
+    "2001:331c",
+    "2001:331e",
+    "2001:331f",
+    "20f4:808a",
+    "2357:0115",
+    "2357:012d",
+    "2357:012e",
+    "2357:0138",
+    "7392:b822",
+    "7392:c822"
+  ],
+  "ev6": {
+    "repository": "https://github.com/MANN1309/ev6-kr-usbwifi-dongle",
+    "commit": "90ed243a93b3f1183a288e360daf5bd54da417b3",
+    "release": "v4.14.0 (beta)",
+    "input_sha256": "63e94e810c13a8f5ddf5cf652e3a4e30a57ae10bdd9419f6e21365442e92cee2"
+  },
+  "ax_source_mapping": {
+    "chipset": "RTL8831BU / RTL8851BU",
+    "ids": [
+      "0bda:b831",
+      "0bda:b851",
+      "2001:332a",
+      "2c4e:0128",
+      "3625:010b",
+      "7392:e611"
+    ],
+    "references": [
+      "https://iptime.com/products/807?pd=1",
+      "https://github.com/torvalds/linux/blob/master/drivers/net/wireless/realtek/rtw89/rtw8851bu.c",
+      "https://github.com/biglinux/rtl8831/blob/main/os_dep/linux/usb_intf.c"
+    ],
+    "patch": "usb/g70/source/driver8851/patches/0005-rtl8831bu-id-table.patch",
+    "vehicle_verified": false,
+    "reference_snapshot_sha256": {
+      "rtw8851bu-linux-reference.c": "cefdfdd2f379599fc8092dc87dbe79f8335ff82122491b5de9df75b047c3fbcc",
+      "rtl8831-vendor-usb-reference.c": "70ec0afd3c526e9a31d7bd8d774b5051f0324d500717d1527a87033ba2f58654"
+    },
+    "module_sha256": "10cc0f42f1e3f7b7884d526b92673a1aead52e3e60f1153db4aa734cfbac2006"
+  }
+}

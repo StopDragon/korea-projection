@@ -1,0 +1,33 @@
+{
+  "id": "ev6-kr-aa-keep",
+  "name": "EV6 KR dongle helper (AA keep-connected, plug-in notices, drop logs)",
+  "version": "1.3.0",
+  "hmgapi": ">=1.0.2",
+  "authors": [
+    "EV6 KR test build"
+  ],
+  "license": "AGPL-3.0",
+  "description": "Korean EV6 (CVEV.KOR 260902) with the USB Wi-Fi dongle, delivered by the dongle package usbwifi.hotspot. 1) Keeps wireless Android Auto connecting: when the dongle's access point is up and stock AA has not started, or sits 'starting' (status 3) for 12 s, tries in order stock connectWirelessSession, reopen the phone's AA Bluetooth channel, close and reopen it, last a Bluetooth reconnect (setting, never in a call, at most once per 10 min). 2) Hides the two notices shown when the dongle (a USB id of its driver) is plugged in: GPM's 'charging only' OSD and the 30 s 'unsupported media device' notice (hooks GalReceiverService.sendToOsdMessage and UsbHostManager.isWhiteListedByDevice; other USB devices untouched). 3) Logs every drop of a connected Android Auto and asks the dongle daemon to save the logs of that moment (drop.req -> drop_<date>.log). Log: /data/local/tmp/usbwifi_hotspot/aakeep.log, plugquiet.log.",
+  "system": {
+    "product": [
+      "CVEV.KOR.0000.V039.001.260902"
+    ],
+    "platform": [
+      "tcc803x"
+    ],
+    "android": "4.4.2",
+    "props": {
+      "ro.product.opt.stepofspec": "<999"
+    }
+  },
+  "logs": {
+    "match": [
+      "ev6-kr-aa-keep"
+    ]
+  },
+  "hooks": {
+    "jar": "hooks.jar",
+    "entry": "hmgapi.mods.aakeep.AaKeep",
+    "points": {}
+  }
+}

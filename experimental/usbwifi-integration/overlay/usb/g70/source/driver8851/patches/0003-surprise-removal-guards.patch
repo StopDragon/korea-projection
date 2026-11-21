@@ -1,0 +1,45 @@
+EV6 patch 8851-0003: surprise unplug guards (reduced port of the 88x2bu build's patch 0003)
+
+Why: on the car an unplug while the interface is up can hang or crash the kernel, and the
+  head unit's kernel panics on soft lockups, so the head unit reboots.
+What:
+  - rtw_dev_remove(): if the usb core already marked the device NOTATTACHED (unplug), set
+    surprise-removed before the netdevs are unregistered.
+  - usbctrl_vendorreq(): stop retrying once the device cannot do I/O any more.
+Not ported (the G6/PHL driver is structured differently): the tasklet and cfg80211
+  call guards of the 88x2bu patch. EXPERIMENTAL: not tested with the real dongle.
+
+diff --git a/os_dep/linux/usb_intf.c b/os_dep/linux/usb_intf.c
+index 19d8211..97238f7 100755
+--- a/os_dep/linux/usb_intf.c
++++ b/os_dep/linux/usb_intf.c
+@@ -1042,6 +1042,15 @@ static void rtw_dev_remove(struct usb_interface *pusb_intf)
+ 		rtw_usbfs_unhide(pusb_intf);
+ 	}
+ 
++	/*
++	 * EV6: on an unplug the usb core has already marked the device NOTATTACHED. Mark it
++	 * removed now, before the netdevs are unregistered, so that ndo_stop and cfg80211's
++	 * stop_ap/disconnect paths do not send register I/O and commands (with retries and
++	 * waits) to a device that is gone. The car's kernel panics on soft lockups.
++	 */
++	if (interface_to_usbdev(pusb_intf)->state == USB_STATE_NOTATTACHED)
++		dev_set_surprise_removed(dvobj);
++
+ 	dvobj->processing_dev_remove = _TRUE;
+ 
+ 	/* TODO: use rtw_os_ndevs_deinit instead at the first stage of driver's dev deinit function */
+diff --git a/os_dep/linux/usb_ops_linux.c b/os_dep/linux/usb_ops_linux.c
+index 3f57597..11b64c4 100755
+--- a/os_dep/linux/usb_ops_linux.c
++++ b/os_dep/linux/usb_ops_linux.c
+@@ -138,6 +138,9 @@ int usbctrl_vendorreq(struct dvobj_priv *pdvobjpriv, u8 request, u16 value, u16
+ 				dev_set_surprise_removed(pdvobjpriv);
+ 				break;
+ 			}
++			/* EV6: no more retries once the device is known to be gone (unplug) */
++			if (RTW_CANNOT_IO(pdvobjpriv))
++				break;
+ 
+ 		}
+ 

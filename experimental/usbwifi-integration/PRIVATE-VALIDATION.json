@@ -1,0 +1,48 @@
+{
+  "release": "1.7.4.2 personal",
+  "host_regression_tests": {
+    "passed": 71,
+    "seconds": 272.567,
+    "log": "all-nonax.log"
+  },
+  "ap_capabilities_parser": "Linux gcc with UBSan; AP type, permitted/disabled/no-IR channel, malformed attributes passed",
+  "ap_capabilities_arm_smoke": "ARM32 static ELF executed under QEMU; unavailable capability returned explicitly",
+  "vehicle_test_of_integrated_release": false,
+  "g70_ax_vehicle_test": false,
+  "screen_freeze_fix_verified": false,
+  "kernel_abi_limit": "Matching config/stock fingerprints, vermagic and exported symbol names are necessary checks, not full ABI proof.",
+  "ax_host_integration_tests": {
+    "passed": 5,
+    "seconds": 36.992,
+    "log": "ax-integration.log"
+  },
+  "total_host_tests_passed": 76,
+  "ax_module": {
+    "sha256": "10cc0f42f1e3f7b7884d526b92673a1aead52e3e60f1153db4aa734cfbac2006",
+    "md5": "240bd8f68869d02aed7cfbd2ff76c805",
+    "srcversion": "533BB7E5866E52F63B9ACCB",
+    "mandatory_exports": 203,
+    "g70_missing_exports": [],
+    "compiled_usb_aliases": [
+      "0bda:b831",
+      "0bda:b851",
+      "2001:332a",
+      "2c4e:0128",
+      "3625:010b",
+      "7392:e611"
+    ],
+    "vehicle_test": false,
+    "kernel_abi_fully_proved": false
+  },
+  "shell_syntax": {
+    "runtime_files": 42,
+    "shells": [
+      "bash",
+      "dash",
+      "ksh"
+    ],
+    "passed": 126
+  },
+  "compiler_warnings": 1476,
+  "compiler_warning_note": "Existing vendor macro redefinitions, gcc 4.7 option warnings and initializer-brace warnings are retained in ax-build.log; no warnings-free claim."
+}

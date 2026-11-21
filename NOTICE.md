@@ -2,6 +2,15 @@
 
 Korea Projection은 GNU AGPL-3.0입니다(`LICENSE`). 아래는 다른 프로젝트에서 가져오거나 바탕으로 삼은 부분과 그 원저작권입니다.
 
+## 공통 USB Wi-Fi 통합 제안
+
+- `experimental/usbwifi-integration/`는 개인용 1.7.4.2의 선택형 통합 소스와 호스트 시험입니다. 기본 배포를 바꾸거나 실차 지원 완료로 표시하지 않습니다.
+- AGPL-3.0 실행 스크립트와 별도로 GPL-2.0 Realtek 드라이버를 제공하며, 완전한 업스트림 소스 압축·패치·설정·빌드 자료와 각 모듈의 해시를 함께 둡니다.
+- EV6 보조 모드의 원작: EV6 KR USB Wi-Fi 동글 시스템 (MANN1309), https://github.com/MANN1309/ev6-kr-usbwifi-dongle . 원본 NOTICE/DISCLAIMER/ADDITIONAL-TERMS와 대응 소스를 유지합니다. 수정판은 원작자의 보증을 뜻하지 않습니다.
+- 읽기 전용 `ctrl-status`와 `ap-capabilities`는 MIT-0이며 musl/Zig 고지를 유지합니다.
+- 원본 APK·BusyBox·서명 무선 모드는 해시로 검증하는 빌드 입력이며 새 서명이나 개인 키를 제공하지 않습니다. 별도 NX4 서명 모드와 정확한 대응 소스를 확인하지 못한 미사용 GRT 바이너리는 커밋하지 않습니다.
+- 상세 고지와 빌드 입력 제한은 실험 폴더의 README 및 `usb/THIRD-PARTY.txt`를 확인하세요.
+
 ## NEMESIS (xwtk, AGPL-3.0)
 
 - https://github.com/xwtk/hmg_nemesis

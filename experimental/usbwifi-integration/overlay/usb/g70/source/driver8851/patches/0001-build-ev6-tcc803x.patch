@@ -1,0 +1,74 @@
+EV6 patch 8851-0001: build for the Telechips tcc803x head unit
+
+Why:
+  Upstream builds for the PC it runs on (CONFIG_PLATFORM_I386_PC). We cross-build for
+  the Hyundai/Kia Gen5W head unit (ARMv7, Linux 3.18.24-tcc) with the AOSP gcc 4.7.
+
+What changes:
+  - Makefile: CONFIG_PLATFORM_I386_PC = n, CONFIG_PLATFORM_EV6_TCC803X = y,
+    CONFIG_MP_INCLUDED = n (no manufacturing mode), CONFIG_LOAD_PHY_PARA_FROM_FILE = n
+    (PHY tables built in; the car has no /lib/firmware files for this chip).
+  - platform/ev6_tcc803x.mk: little endian, cfg80211, concurrent mode (hotspot + client),
+    channel plan from rtw_country_code, ARCH=arm and the default cross-compile variables.
+
+diff --git a/Makefile b/Makefile
+index 34144ea..b6cc837 100644
+--- a/Makefile
++++ b/Makefile
+@@ -58,7 +58,8 @@ CONFIG_PCI_HCI = n
+ CONFIG_SDIO_HCI = n
+ CONFIG_GSPI_HCI = n
+ ########################## Features ###########################
+-CONFIG_MP_INCLUDED = y
++# EV6: no MP (manufacturing/test) mode
++CONFIG_MP_INCLUDED = n
+ CONFIG_CONCURRENT_MODE = y
+ CONFIG_POWER_SAVE = y
+ CONFIG_BTC = y
+@@ -66,7 +67,8 @@ CONFIG_WAPI_SUPPORT = n
+ CONFIG_EFUSE_CONFIG_FILE = y
+ CONFIG_EXT_CLK = n
+ CONFIG_TRAFFIC_PROTECT = n
+-CONFIG_LOAD_PHY_PARA_FROM_FILE = y
++# EV6: PHY tables built in; no /lib/firmware files on the car
++CONFIG_LOAD_PHY_PARA_FROM_FILE = n
+ # Remember to set CONFIG_FILE_FWIMG when set CONFIG_FILE_FWIMG to y,
+ # or driver will fail on ifconfig up because can't find firmware file
+ CONFIG_FILE_FWIMG = n
+@@ -226,7 +228,9 @@ CONFIG_LAYER2_ROAMING = y
+ CONFIG_ROAMING_FLAG = 0x3
+ 
+ ###################### Platform Related #######################
+-CONFIG_PLATFORM_I386_PC = y
++CONFIG_PLATFORM_I386_PC = n
++# EV6: Telechips tcc803x head unit (Hyundai/Kia Gen5W), ARMv7, Linux 3.18.24-tcc
++CONFIG_PLATFORM_EV6_TCC803X = y
+ CONFIG_PLATFORM_RTL8198D = n
+ CONFIG_PLATFORM_ANDROID_X86 = n
+ CONFIG_PLATFORM_ANDROID_INTEL_X86 = n
+diff --git a/platform/ev6_tcc803x.mk b/platform/ev6_tcc803x.mk
+new file mode 100644
+index 0000000..bdb25e9
+--- /dev/null
++++ b/platform/ev6_tcc803x.mk
+@@ -0,0 +1,20 @@
++# EV6: Telechips tcc803x (Hyundai/Kia Gen5W head unit), ARMv7, Linux 3.18.24-tcc, AOSP arm-eabi-4.7.
++# The build script passes KSRC, CROSS_COMPILE and KVER on the command line.
++ifeq ($(CONFIG_PLATFORM_EV6_TCC803X), y)
++EXTRA_CFLAGS += -DCONFIG_LITTLE_ENDIAN
++EXTRA_CFLAGS += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT
++EXTRA_CFLAGS += -DCONFIG_RADIO_WORK
++# one radio, two netdevs: hotspot and client at the same time (as the 88x2bu build)
++EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE
++# rtw_country_code=KR wins over a channel plan locked in efuse (as the 88x2bu build)
++EXTRA_CFLAGS += -DCONFIG_FORCE_SW_CHANNEL_PLAN
++# gcc 4.7: keep real warnings visible
++EXTRA_CFLAGS += -Wno-sign-compare -Wno-missing-field-initializers
++ARCH := arm
++CROSS_COMPILE ?= arm-eabi-
++KVER ?= 3.18.24-tcc
++KSRC ?= /lib/modules/$(KVER)/build
++MODDESTDIR := /lib/modules/$(KVER)/kernel/drivers/net/wireless/
++INSTALL_PREFIX :=
++_PLATFORM_FILES += platform/platform_ops.o
++endif

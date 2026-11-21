@@ -1,0 +1,16 @@
+[nemesis]
+version=1.1
+id=korea.projection.usblogs
+name=KP USB Wi-Fi Logs
+type=application
+package-version=1.7.4.2
+short-desc=Save USB Wi-Fi diagnostics using one data port
+detailed-desc=Personal KP 1.7.4.2 AC/AX USB Wi-Fi diagnostics. Capture with dongle, restart, swap to the marked USB stick and Launch to export. Driver resumes after another restart.
+os=*.KOR.*
+models=*_kr
+depends=korea.projection@1.7.4.2
+
+[app.0]
+kind=sh
+path=launch.sh
+uid=root

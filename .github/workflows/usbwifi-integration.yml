@@ -1,0 +1,37 @@
+name: Common USB Wi-Fi integration
+
+on:
+  push:
+    branches: [feat/common-usbwifi-integration]
+    paths: ['experimental/usbwifi-integration/**', '.github/workflows/usbwifi-integration.yml']
+  pull_request:
+    paths: ['experimental/usbwifi-integration/**', '.github/workflows/usbwifi-integration.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: experimental/usbwifi-integration
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install host test tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang ksh patch
+      - name: Prepare from the pinned official release
+        run: |
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/korea.projection-1.7.4.zip" \
+            https://github.com/StopDragon/korea-projection/releases/download/v1.7.4/korea.projection-1.7.4.zip
+          python3 prepare.py --base-package "$RUNNER_TEMP/korea.projection-1.7.4.zip"
+      - name: Runtime shell syntax
+        run: python3 check_syntax.py
+      - name: Host integration tests
+        run: python3 -m unittest discover -s tests -v
+      - name: AP capability parser with UBSan
+        run: |
+          cc -Wall -Wextra -Werror -fsanitize=undefined -Ipkg/usb/g70/source tests/ap_capabilities_test.c -o /tmp/ap-capabilities-test
+          /tmp/ap-capabilities-test

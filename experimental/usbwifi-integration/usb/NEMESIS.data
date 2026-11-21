@@ -1,0 +1,15 @@
+[nemesis]
+version=1.1
+type=list
+
+[package.0]
+path=packages/korea.projection.zip
+name=Korea Projection 1.7.4.2 Personal
+short-desc=Automatic AC/AX USB Wi-Fi by hardware compatibility
+published=2026-11-21
+
+[package.1]
+path=packages/korea.projection.usblogs.zip
+name=KP USB Wi-Fi Logs
+short-desc=Save diagnostics with one data USB port
+published=2026-11-21

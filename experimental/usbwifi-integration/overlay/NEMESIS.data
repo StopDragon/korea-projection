@@ -1,0 +1,28 @@
+[nemesis]
+version=1.1
+id=korea.projection
+name=Korea Projection: Auto USB Wi-Fi
+type=service,application
+package-version=1.7.4.2
+short-desc=Personal 1.7.4.2: hardware-aware AC/AX USB Wi-Fi
+detailed-desc=개인용 1.7.4.2. 실제 USB ID·클래스와 커널 설정·순정 모듈·필수 심볼로 AC/AX 드라이버를 선택합니다. G70 AX900mini도 조건부 시도. 검증 이력과 실패 보호, 단일 포트 로그 복사 포함. 통합판 실차 재검증 필요. 원본: StopDragon/MANN1309.
+os=*.KOR.*
+models="*_kr"
+depends=hmgapi,!niro.carplay.hotspot,!g70.usbwifi.bridge,!g70.usbwifi.logs,!g70.wifi.probe,!jmk-wifi,!jmk.usbwifi,!usbwifi.hotspot,!stock.hotspot
+postinstall=scripts/post.sh
+preuninstall=scripts/preun.sh
+
+[app.0]
+kind=sh
+path=bin/status.sh
+uid=root
+
+[app.1]
+component=korea.projection.app/.StatusActivity
+
+[service.0]
+name=ap
+kind=sh
+path=svc/hotspot.sh
+uid=root
+mode=restart
