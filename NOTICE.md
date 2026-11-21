@@ -2,6 +2,13 @@
 
 Korea Projection은 GNU AGPL-3.0입니다(`LICENSE`). 아래는 다른 프로젝트에서 가져오거나 바탕으로 삼은 부분과 그 원저작권입니다.
 
+## G70 USB Wi-Fi 실험 보조 패키지
+
+- `experimental/g70-usbwifi/`의 새 셸/빌드/시험 코드는 이 저장소의 AGPL-3.0으로 제공합니다.
+- `88x2bu.ko`는 별도 프로그램인 GPL-2.0 드라이버이며, 전체 업스트림 소스 압축과 대응 패치·설정·빌드 자료를 해당 폴더의 `pkg/source/driver/`에 함께 둡니다.
+- 읽기 전용 `ctrl-status`는 MIT-0이고 정적 링크된 musl/Zig 고지를 함께 둡니다. 세부 출처와 고지는 실험 폴더의 `NOTICE.txt` 및 `pkg/source/`를 확인하세요.
+- 기존 기본 패키지의 서명 APK·HMG-API 모드와 라이선스는 변경하지 않습니다.
+
 ## NEMESIS (xwtk, AGPL-3.0)
 
 - https://github.com/xwtk/hmg_nemesis

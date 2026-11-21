@@ -1,0 +1,15 @@
+[nemesis]
+version=1.1
+type=list
+
+[package.0]
+path=packages/g70.usbwifi.bridge.zip
+name=G70 USB Wi-Fi Bridge
+short-desc=A3000mini Wi-Fi bridge for Korea Projection on G70
+published=2026-11-21
+
+[package.1]
+path=packages/g70.usbwifi.logs.zip
+name=G70 Wi-Fi Logs
+short-desc=Save session, pause next boot, then export with one USB port
+published=2026-11-21

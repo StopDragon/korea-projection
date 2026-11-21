@@ -1,0 +1,41 @@
+name: Experimental G70 USB Wi-Fi tests
+
+on:
+  push:
+    paths:
+      - 'experimental/g70-usbwifi/**'
+      - '.github/workflows/g70-usbwifi.yml'
+  pull_request:
+    paths:
+      - 'experimental/g70-usbwifi/**'
+      - '.github/workflows/g70-usbwifi.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install host shell/compiler tools
+        run: sudo apt-get update -qq && sudo apt-get install -y ksh clang
+      - name: Build experimental USB bundle
+        run: python3 experimental/g70-usbwifi/build.py
+      - name: Check shell syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          base = Path('experimental/g70-usbwifi')
+          for folder in ('pkg/bin', 'pkg/scripts', 'logs-pkg'):
+              for script in sorted((base / folder).glob('*.sh')):
+                  for shell in ('bash', 'dash', 'ksh'):
+                      subprocess.run([shell, '-n', str(script)], check=True)
+          PY
+      - name: Run host tests
+        run: python3 -m unittest discover -s experimental/g70-usbwifi/tests -p 'test_*.py' -v

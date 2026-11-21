@@ -1,0 +1,2 @@
+# Preserve the imported corresponding source and patch hashes byte-for-byte.
+pkg/source/driver/** linguist-vendored -whitespace

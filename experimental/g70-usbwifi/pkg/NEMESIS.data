@@ -1,0 +1,26 @@
+[nemesis]
+version=1.1
+id=g70.usbwifi.bridge
+name=G70 USB Wi-Fi Bridge
+type=service,application
+package-version=0.4.1
+short-desc=A3000mini Wi-Fi bridge for Korea Projection on G70
+detailed-desc=G70 260902 bridge for KP 1.7.4. Adds only missing AP-subnet routes in policy tables 60/61. Saves filtered CarPlay failures, USB events and connection transitions. Keeps the tested driver and AP profile. Vehicle testing required.
+os=IKFL.KOR.0000.V039.001.260902
+models=ikfl_kr
+depends=korea.projection@1.7.4,hmgapi,!g70.wifi.probe,!usbwifi.hotspot,!jmk-wifi,!jmk.usbwifi,!wireless.projection.usbwifi
+preinstall=scripts/pre.sh
+postinstall=scripts/post.sh
+preuninstall=scripts/preun.sh
+
+[app.0]
+kind=sh
+path=bin/status.sh
+uid=root
+
+[service.0]
+name=wifi
+kind=sh
+path=bin/wifi.sh
+uid=root
+mode=restart

@@ -1,0 +1,40 @@
+G70 USB Wi-Fi Bridge 0.4.1 — experimental companion for Korea Projection
+
+The bridge, log-export, build and test scripts are AGPL-3.0-only, as marked
+in their source headers. COPYING contains the license. Their preferred source
+and build instructions are in experimental/g70-usbwifi/ of the accompanying
+Korea Projection source tree. Runtime shell/awk source is included directly
+in each NEMESIS package. Korea Projection and HMG-API are separate dependencies.
+This companion does not bundle or re-sign their APKs or wireless-mode packages.
+
+88x2bu.ko is an unchanged, separately loaded GPL-2.0 kernel driver:
+SHA-256 3e78ee38942e08667f68c287f0576ac21855c34cc516710de27cd49fa6137110
+Realtek / cilynx/rtl88x2bu, upstream fc158d1f71b9e5dfcd1fccaf4d28725b65086e3b.
+Vehicle build materials and GPL patches were obtained from:
+https://github.com/MANN1309/ev6-kr-usbwifi-dongle/tree/3c4e0bb/pkg/source/driver
+Those materials attribute the GPL vehicle driver adaptation to jmk-wifi 1.3.4:
+https://github.com/JongMinKim-93/jmk-gen5w-ioniq5
+The complete upstream driver source archive, applied patches, configuration,
+build scripts, original notices and GPL COPYING are retained in source/driver/
+inside the Bridge package (pkg/source/driver/ in the repository).
+
+ctrl-status is an independently implemented, read-only UNIX datagram STATUS
+client. Its MIT-0 source/license and the statically linked musl/compiler-runtime
+license notices are in source/ (pkg/source/ in the repository). The ARM helper
+and driver are unchanged from the vehicle-tested 0.4.0 companion.
+
+Implementation references, with no binaries or mode packages copied:
+https://github.com/GRT47/HKG_5W_USB_Wlan
+https://android.googlesource.com/platform/external/dnsmasq/+/android-4.4.2_r1/src/dhcp.c
+https://android.googlesource.com/platform/external/dnsmasq/+/android-4.4.2_r1/src/option.c
+https://android.googlesource.com/platform/external/iptables/+/android-4.4.2_r1/extensions/libipt_DNAT.c
+https://github.com/torvalds/linux/blob/v3.18/net/ipv4/route.c
+
+The referenced authors have not endorsed this G70 companion. The 0.4.0 vehicle
+test confirmed displayed CarPlay, DHCP and AP operation on the exact firmware
+and USB ID in README.md. The owner reports frozen/unresponsive video while
+music continues. The owner deliberately forced a disconnect to exit the frozen
+screen. Session termination is not treated as proof of spontaneous link loss;
+the cause of the display freeze remains unknown.
+The 0.4.1 source port and stricter USB selection guards have host-test coverage
+but have not yet been retested in the vehicle. See VALIDATION.md for scope.

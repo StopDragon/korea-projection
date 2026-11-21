@@ -1,0 +1,16 @@
+[nemesis]
+version=1.1
+id=g70.usbwifi.logs
+name=G70 Wi-Fi Logs
+type=application
+package-version=0.4.1
+short-desc=Save session, pause next boot, then export with one USB port
+detailed-desc=Single-port diagnostics for G70 USB Wi-Fi Bridge. Launch with dongle to save and pause next boot. Reboot, swap to the marked USB stick and Launch again to export. Export resumes the bridge on the following reboot.
+os=IKFL.KOR.0000.V039.001.260902
+models=ikfl_kr
+depends=g70.usbwifi.bridge
+
+[app.0]
+kind=sh
+path=launch.sh
+uid=root

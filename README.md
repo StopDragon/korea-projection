@@ -125,6 +125,8 @@
 | TP-Link Archer T3U | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izqs0SMtaK](https://link.coupang.com/a/izqs0SMtaK) |
 | 리버네트워크 NEXI NX-AC1300 | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izq0opYmQe](https://link.coupang.com/a/izq0opYmQe) |
 
+별도 개발 경로: [2022 G70 + A3000mini 실험 보조 패키지](experimental/g70-usbwifi/README.md)가 있습니다. 특정 펌웨어/USB ID에서 화면 연결은 확인했으나 재생 중 멈춤이 남아 있습니다. 기본 1.7.x USB 배포에는 포함하지 않으며, 위 일반 지원 표의 안정화 판정을 바꾸지 않습니다.
+
 
 > 이 링크를 통해 구매하시면, 개발자가 소정의 수수료를 쿠팡에게 제공받습니다. 개발에 큰 도움이 됩니다.
 
