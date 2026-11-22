@@ -358,7 +358,7 @@ NEMESIS Manager → My Packages → **Korea Projection: Wireless for Korean Cars
 같은 차종이라도 생산 시기·트림에 따라 내비에 Wi-Fi 부품이 없는 차가 있습니다. 상태 화면이 "Wi-Fi 부품이 없어…"라고 하면 그 차는 무선 카플레이를 쓸 수 없습니다. 판정이 의심되면 내비 버전이 된 차와 같은지 먼저 확인해 주세요.
 
 **NEMESIS를 설치할 수 없어요.**
-엔지니어링 모드에 OTA 메뉴가 없는 차(예: 아반떼 N 2024 `CN7NPE`)는 NEMESIS를 설치할 수 없어 이 패키지도 쓸 수 없습니다. NEMESIS 설치 문의는 [NEMESIS](https://github.com/xwtk/hmg_nemesis) 쪽에 해 주세요.
+예전에는 엔지니어링 모드에 OTA 메뉴가 없는 차(예: 아반떼 N 2024 `CN7NPE`)에 NEMESIS를 설치할 수 없었습니다. **NEMESIS 1.16.8부터는 USB로 설치하는 방법**(NEMESIS 안내의 방법 2)이 생겨, 이런 차도 다시 해 볼 수 있습니다. 다만 한국 차에서 이 방법이 되는지는 아직 확인되지 않았습니다. 설치 방법과 설치 문의는 [NEMESIS](https://github.com/xwtk/hmg_nemesis) 쪽 안내를 따라 주세요. NEMESIS가 설치되면 이 패키지는 위 순서대로 설치하시면 됩니다.
 
 ---
 
