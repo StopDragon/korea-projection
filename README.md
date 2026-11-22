@@ -5,9 +5,9 @@
 >
 > 동글이 필요하신 분은 [아래 쿠팡 링크](#usb-wi-fi-동글-180-준비-중)로 구매해 주시면 개발에 큰 응원이 됩니다.
 >
-> 퇴근 후와 주말에 만들고 있습니다. [커피 한 잔](https://ko-fi.com/stopdragon)이나 [GitHub Sponsors](https://github.com/sponsors/StopDragon) 후원은 시험용 부품을 사는 데 씁니다.
+> 퇴근 후와 주말에 만들고 있습니다. [GitHub Sponsors](https://github.com/sponsors/StopDragon) 후원은 시험용 부품을 사는 데 씁니다.
 >
-> [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-%ED%9B%84%EC%9B%90%ED%95%98%EA%B8%B0-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/StopDragon) [![Ko-fi](https://img.shields.io/badge/Ko--fi-%EC%BB%A4%ED%94%BC%20%ED%95%9C%20%EC%9E%94-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/stopdragon)
+> [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-%ED%9B%84%EC%9B%90%ED%95%98%EA%B8%B0-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/StopDragon)
 
 한국 현대·기아 내비(Gen5W 헤드유닛)에서 **무선 카플레이**와 **무선 안드로이드 오토**를 쓸 수 있게 해 주는 NEMESIS 패키지입니다.
 
