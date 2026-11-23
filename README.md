@@ -237,3 +237,6 @@ NEMESIS Manager → My Packages → **Korea Projection: Wireless for Korean Cars
 ### 후원 해주신 분
 - 아이리어펠님 - 야밤에 출출할때 먹기 좋은 맥도날드 교환권
 - RYUEK님 - 비오늘 날 너무 맛있게 먹으면서 개발했습니다, 뿌링클콤보와 콜라
+- 부르릉님 - 스타벅스 커피 2잔과 생크림 카스테라
+- Brant님 - 스타벅스 커피 2잔과 누텔라바게트 소금빵
+- 전기차좋아님 - 마라샹궈 사먹어야지, 배민 교환권
