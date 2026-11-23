@@ -3,7 +3,7 @@
 > [!NOTE]
 > **이 문서의 USB Wi-Fi 동글 구매 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.**
 >
-> 동글이 필요하신 분은 [아래 쿠팡 링크](#usb-wi-fi-동글-180-준비-중)로 구매해 주시면 개발에 큰 응원이 됩니다.
+> 동글이 필요하신 분은 [아래 쿠팡 링크](#usb-wi-fi-동글)로 구매해 주시면 개발에 큰 응원이 됩니다.
 >
 > 퇴근 후와 주말에 만들고 있습니다. [GitHub Sponsors](https://github.com/sponsors/StopDragon) 후원은 시험용 부품을 사는 데 씁니다.
 >
@@ -118,17 +118,17 @@
 
 <br>
 
-### USB Wi-Fi 동글 (1.8.0 준비 중)
+### USB Wi-Fi 동글
 
-내비에 Wi-Fi 부품이 없거나 모종의 이유로 Wi-Fi 칩이 켜지지 않는 차를 위해 **1.8.0에서 USB Wi-Fi 동글 지원을 준비하고 있습니다.**
+내비에 Wi-Fi 부품이 없거나 모종의 이유로 Wi-Fi 칩이 켜지지 않는 차는 **1.8.0부터 USB Wi-Fi 동글로 무선 프로젝션을 쓸 수 있습니다.** 아래 세 동글만 지원하며, 모두 차에서 연결을 확인했습니다.
 
-> ⚠️ **지금 판(1.7.x)은 동글을 쓰지 않습니다.** 동글을 꽂아도 무선 카플레이·안드로이드 오토가 켜지지 않습니다. 아래는 1.8.0에서 지원할 예정인 동글이며, **아직 차에서 확인하지 않았습니다.** 1.8.0이 나오고 차에서 확인되면 이 표에 ✅로 표시합니다.
+> ⚠️ **1.7.x 버전은 동글을 쓰지 않습니다.** 1.8.0은 지금 베타 버전으로 [Releases](../../releases)에서 받을 수 있고, 정식 버전은 준비 중입니다.
 
-| 제품 | 상태 | 구매 |
-|---|---|---|
-| ipTIME A3000MINI | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izqnJc9AJg](https://link.coupang.com/a/izqnJc9AJg) |
-| TP-Link Archer T3U | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izqs0SMtaK](https://link.coupang.com/a/izqs0SMtaK) |
-| 리버네트워크 NEXI NX-AC1300 | 🧪 1.8.0 준비 중 | [link.coupang.com/a/izq0opYmQe](https://link.coupang.com/a/izq0opYmQe) |
+| 제품 | 구매 |
+|---|---|
+| ipTIME A3000MINI | [link.coupang.com/a/izqnJc9AJg](https://link.coupang.com/a/izqnJc9AJg) |
+| TP-Link Archer T3U | [link.coupang.com/a/izqs0SMtaK](https://link.coupang.com/a/izqs0SMtaK) |
+| 리버네트워크 NEXI NX-AC1300 | [link.coupang.com/a/izq0opYmQe](https://link.coupang.com/a/izq0opYmQe) |
 
 
 > 이 링크를 통해 구매하시면, 개발자가 소정의 수수료를 쿠팡에게 제공받습니다. 개발에 큰 도움이 됩니다.
