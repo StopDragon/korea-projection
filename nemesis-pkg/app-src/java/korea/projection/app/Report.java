@@ -74,7 +74,7 @@ final class Report {
             return "지원하지 않는 HMG-API 버전입니다. " + MIN_HMGAPI + " 이상으로 업데이트해 주세요.";
         // 1.6.1: 차에 있는 무선 모드가 한국 차를 지원하지 않는 다른 판(서비스는 덮어쓰지 않음). 토스트 대신 여기서 알린다.
         // 그 모드로 이미 카플레이가 연결돼 있으면 안내하지 않는다(판단은 mod.json의 region만 보므로).
-        if (foreign()) return "차에 있는 HMG-API 무선 모드가 한국 차용이 아닙니다. HMG-API 앱에서 그 모드를 지우고 적용한 뒤 재부팅해 주세요.";
+        if (foreign()) return "차에 있는 HMG-API 무선 모드가 국내용이 아닙니다. HMG-API 앱에서 그 모드만 지우고(HMG-API는 지우지 말고) 적용한 뒤 재부팅해 주세요.";
         if ("no".equals(get("mod"))) return "HMG-API 무선 모드가 없습니다. HMG-API 앱에서 설치해 주세요.";
         if ("no".equals(get("mod_on")))
             return "HMG-API 무선 모드가 꺼져 있습니다. HMG-API 앱에서 켜고 Apply changes 후 다시 시작해 주세요.";
@@ -83,15 +83,15 @@ final class Report {
         if ("off".equals(get("hooks"))) return hooksOffAdvice();
         // 1.7.2: HMG-API가 이 차에서 무선 모드의 훅을 켜지 않음(차에 없는 훅 지점이 있음, 스포티지 NQ5 #46)
         if ("off".equals(get("mod_hooks")))
-            return "HMG-API가 이 차에서 무선 모드를 켜지 못했습니다(이 차와 맞지 않는 부분이 있음). 내비를 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 리포트를 보내 주세요.";
-        if (!yes("feat_carplay")) return "무선 카플레이 기능이 꺼져 있습니다. HMG-API 무선 모드를 확인해 주세요.";
+            return "HMG-API가 이 차에서 무선 모드를 켜지 못했습니다(이 차와 맞지 않는 부분이 있음). 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 제보 파일을 보내 주세요.";
+        if (!yes("feat_carplay")) return "무선 프로젝션 기능이 꺼져 있습니다. HMG-API 무선 모드를 확인해 주세요.";
         // 1.6.2: 순정 카플레이 AP를 쓰는 차인데 지금 순정 Wi-Fi가 꺼져 있음(서비스는 우리 핫스팟을 켜지 않고 기다린다)
         if (!stockAp() && yes("stock_seen") && !yes("our_ap"))
-            return "Wi-Fi가 지금 꺼져 있습니다. 아이폰을 연결해 보고, 안 되면 내비를 3분 후 재부팅해 주세요.";
+            return "Wi-Fi가 지금 꺼져 있습니다. 휴대폰을 연결해 보고, 안 되면 3분 후 재부팅해 주세요.";
         // 1.7.0: Wi-Fi 칩은 있는데 드라이버가 올라오지 않아 wlan0가 없다(그랜저 IG #52·#53). 재부팅으로 풀리는지 보고, 아니면 제보
         if (!stockAp() && yes("nowlan") && !yes("our_ap"))
-            return "Wi-Fi 장치가 켜지지 않아 핫스팟을 켜지 못했습니다. 내비를 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 리포트를 보내 주세요.";
-        if (!stockAp() && (!yes("our_ap") || !yes("our_dhcp"))) return "핫스팟이 꺼져 있습니다. 내비를 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요.";
+            return "Wi-Fi 장치가 켜지지 않아 핫스팟을 켜지 못했습니다. 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 제보 파일을 보내 주세요.";
+        if (!stockAp() && (!yes("our_ap") || !yes("our_dhcp"))) return "핫스팟이 꺼져 있습니다. 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요.";
         if (older(get("nemesis"), MIN_NEMESIS) != 0)
             return "NEMESIS를 " + MIN_NEMESIS + " 이상으로 업데이트해 주세요.";
         if (!"0".equals(get("cp_conn")) && !get("cp_conn").isEmpty()) return "무선 카플레이 연결됨";
@@ -104,7 +104,7 @@ final class Report {
     }
 
     // 1.7.4(소유자 문구): 상태 화면 판정 문구와 같게(옛 상태 파일일 때만 쓰임)
-    static final String READY_BOTH = "무선 카플레이·안드로이드 오토 준비됨.";
+    static final String READY_BOTH = "무선 프로젝션 준비됨.";
 
     /** 1.7.3(U-6): "이 차는 안 됨"으로 끝나는 판정(verdict_end=yes) 아래 회색 한 줄 */
     static final String UNINSTALL_HINT = "지우려면 NEMESIS Manager → Korea Projection → Uninstall 뒤 재부팅하세요. 유선 카플레이는 그대로입니다.";
@@ -249,8 +249,8 @@ final class Report {
 
     /** 1.7.3(U-7): 이만큼(초) 넘게 걸리면 "평소보다 오래" 안내(STALE 900초 = 15분과 맞춤) */
     static final long SLOW = 600;
-    static final String SLOW_MSG = "평소보다 오래 걸립니다. 15분이 지나도 그대로면 내비를 재부팅해 주세요.";
-    static final String PROGRESS_HINT = "보통 5분 안에 끝납니다. 끝날 때까지 내비를 끄지 마세요.";
+    static final String SLOW_MSG = "평소보다 오래 걸리고 있습니다. 15분이 지나도 그대로면 강제로 재부팅해 주세요.";
+    static final String PROGRESS_HINT = "일반적으로 5분 안에 완료됩니다. 끝날 때까지 전원을 끄지 마세요.";
 
     /** 진행이 오래 걸리면 SLOW_MSG, 아니면 "" (now: 지금 시각 초) */
     String progSlow(long now) {
@@ -404,12 +404,12 @@ final class Report {
     String hooksOffAdvice() {
         String m = get("hookmap");
         if ("mapped".equals(m))
-            return "HMG-API 훅이 꺼져 있습니다. HMG-API 앱 Settings에서 'Check the map on this car'를 누른 뒤 내비를 재부팅해 주세요.";
+            return "HMG-API 훅이 꺼져 있습니다. HMG-API 앱 Settings에서 'Check the map on this car'를 누른 뒤 재부팅해 주세요.";
         if ("none".equals(m))
-            return "HMG-API에 이 차의 지도가 없어 훅이 꺼져 있습니다. QR로 제보해 주세요.";
+            return "HMG-API에 이 차의 MAP이 없어 훅이 꺼져 있습니다. QR로 제보해 주세요.";
         if ("mismatch".equals(m))
-            return "HMG-API 지도가 이 차의 소프트웨어와 맞지 않아 훅이 꺼져 있습니다. QR로 제보해 주세요.";
-        return "HMG-API 훅이 꺼져 있습니다(마지막 부팅 기록). 내비를 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요.";
+            return "HMG-API MAP이 이 차의 소프트웨어와 맞지 않아 훅이 꺼져 있습니다. QR로 제보해 주세요.";
+        return "HMG-API 훅이 꺼져 있습니다(마지막 부팅 기록). 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요.";
     }
 
     /** status.sh의 hmgapi 값("version 1.0.2 build 180185d 2026-11-04")에서 버전만. 없으면 "" */
@@ -452,11 +452,11 @@ final class Report {
 
     /** 무선 모드 칸: 없음 / 꺼짐 / 켜짐(무선 카플레이 설정 꺼짐) / 켜짐. 예전 상태 파일(mod만 있음)도 읽는다 */
     private String modCell() {
-        if (yes("mod_foreign")) return "한국 차용 아님 (지워야 함)";
+        if (yes("mod_foreign")) return "국내용 아님 (지워야 함)";
         if ("no".equals(get("mod"))) return "없음 (필요)";
         if ("no".equals(get("mod_on"))) return "꺼짐 (켜야 함)";
         if ("off".equals(get("bridge"))) return "켜짐, Wireless CarPlay 설정 꺼짐";
-        if ("off".equals(get("mod_hooks"))) return "켜짐, 훅이 안 켜짐 (리포트 참고)";
+        if ("off".equals(get("mod_hooks"))) return "켜짐, 훅이 안 켜짐 (제보 파일 참고)";
         if (yes("mod_on")) return "켜짐" + pendingNote();
         return yn("mod");
     }
@@ -464,7 +464,7 @@ final class Report {
     /** 1.7.1: 우리가 넣은 모드가 패키지의 새 판으로 바뀌기를 기다리는 중(부팅 약 2분 뒤 자동). 차의 판을 함께 보인다 */
     private String pendingNote() {
         if (!yes("mod_pending")) return get("modver").isEmpty() ? "" : " (" + get("modver") + ")";
-        return " (" + (get("modver").isEmpty() ? "이전 판" : get("modver")) + ", 새 판으로 바꾸기 대기 중)";
+        return " (" + (get("modver").isEmpty() ? "이전 버전" : get("modver")) + ", 새 버전으로 바꾸기 대기 중)";
     }
 
     /**
@@ -528,14 +528,14 @@ final class Report {
         if ("wait".equals(h.get("conf")))
             out.add(new String[] { "1", "Wi-Fi 설정이 바뀌었습니다. 카플레이 연결이 끝나면 핫스팟을 다시 시작합니다.", "" });
         if ("wifi".equals(h.get("iph")) && h.fresh("iph_t", now))
-            out.add(new String[] { "1", "아이폰이 차 Wi-Fi에 오지 않습니다. 아이폰 설정 → Wi-Fi에서 차 네트워크를 지우고 다시 연결하세요.", "" });
+            out.add(new String[] { "1", "휴대폰이 차 Wi-Fi에 오지 않습니다. 휴대폰 설정 → Wi-Fi에서 차 네트워크를 지우고 다시 연결하세요.", "" });
         // 베타 1 리뷰 A: 우리 Wi-Fi에 기기는 붙었는데 카플레이가 60초 동안 안 열림. 아이폰인지 가릴 수 없어 "폰"이라고 쓴다
         if ("nocp".equals(h.get("iph")) && h.fresh("iph_t", now))
-            out.add(new String[] { "1", "폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 내비를 재부팅해 주세요.", "" });
+            out.add(new String[] { "1", "휴대폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 재부팅해 주세요.", "" });
         String aa = h.get("aa");
         boolean aaNow = h.fresh("aa_t", now);
         if ("bt".equals(aa) && aaNow)
-            out.add(new String[] { "1", "안드로이드 폰의 블루투스를 껐다 켜 주세요(또는 내비 블루투스 화면에서 폰을 다시 연결).", "" });
+            out.add(new String[] { "1", "휴대폰의 블루투스를 껐다 켜 주세요(또는 내비 블루투스 화면에서 휴대폰을 다시 연결).", "" });
         if ("cpwait".equals(aa) && aaNow)
             out.add(new String[] { "1", "카플레이가 연결되어 있어 안드로이드 오토는 기다립니다.", "" });
         // 베타 1(소유자 요청): 무선 안드로이드 오토 준비됨·연결됨은 따로 줄을 두지 않는다. 판정 줄(status.sh kp_verdict)이
@@ -568,7 +568,7 @@ final class Report {
     static final String REQ_SENT = "제보 파일을 만드는 중입니다. USB를 빼지 마세요.";
     static final String REQ_WAITING = "요청을 기다리는 중입니다(길면 1분쯤).";
     static final String REQ_FAILED = "제보 파일을 만들지 못했습니다. NEMESIS에서 Launch를 다시 눌러 주세요.";
-    static final String REQ_WRITE_FAILED = "요청을 저장하지 못했습니다. 내비를 재부팅한 뒤 다시 눌러 주세요.";
+    static final String REQ_WRITE_FAILED = "요청을 저장하지 못했습니다. 재부팅한 뒤 다시 눌러 주세요.";
 
     /**
      * /proc/mounts 내용에서 USB(/storage/usb0·usb1)가 마운트돼 있는가. 읽지 못했으면(null) 모름(null)을 돌려준다:
@@ -663,7 +663,7 @@ final class Report {
         out.add(new String[] { "HMG-API 무선 모드", modCell() });
         // 1.7.4(B-8 ②): 되돌리기 USB로 고정한 차만 한 줄(mod_pin: 판 번호, old = 1.7.3 USB가 만든 판 번호 없는 고정)
         String pin = get("mod_pin").trim();
-        if (!pin.isEmpty()) out.add(new String[] { "무선 모드 고정", "old".equals(pin) ? "고정됨(판 모름)" : pin });
+        if (!pin.isEmpty()) out.add(new String[] { "무선 모드 고정", "old".equals(pin) ? "고정됨(버전 모름)" : pin });
         String h = get("hooks");
         out.add(new String[] { "HMG-API 훅", "on".equals(h) ? "켜짐" : "off".equals(h) ? "꺼짐 (" + (get("hookmap").isEmpty() ? "?" : get("hookmap")) + ", 마지막 부팅 기록)" : "-" });
         out.add(new String[] { "NEMESIS", ver(get("nemesis"), MIN_NEMESIS) });
@@ -675,9 +675,10 @@ final class Report {
         if (!am.isEmpty())
             out.add(new String[] { "무선 카플레이 Wi-Fi", "stock".equals(am) ? "내비 순정 Wi-Fi" : "ours".equals(am) ? "Korea Projection 핫스팟" : "없음" });
         out.add(new String[] { "핫스팟 (hostapd)", yn("our_ap") + (stockAp() ? " (순정 Wi-Fi를 쓰므로 꺼 둠)" : "") });
-        out.add(new String[] { "IP 나눠 주기 (DHCP)", yn("our_dhcp") });
+        out.add(new String[] { "DHCP", yn("our_dhcp") });
         out.add(new String[] { "순정 핫스팟", yn("other_ap") });
-        out.add(new String[] { "카플레이 연결", get("cp_conn") + "개" });
+        // 1.8.0 베타 1: 값이 없으면(옛·덜 쓴 상태 파일) "개"만 보이지 않게 다른 줄처럼 "-"
+        out.add(new String[] { "카플레이 연결", get("cp_conn").isEmpty() ? "-" : get("cp_conn") + "개" });
         out.add(new String[] { "wireless.projection", yn("wp") + " (필요 없음)" });
         return out;
     }
@@ -711,12 +712,34 @@ final class Report {
         // 1.7.3(K-5): 판정 결과(상태 화면·리포트와 같은 값)를 앞쪽에. U-10: 확인 안 된 차가 연결됐으면 맨 앞에 result: connected
         if (!get("verdict").isEmpty()) lines.add(1, "verdict: " + get("verdict"));
         if ("newconnected".equals(get("verdict")) || "connected".equals(get("verdict"))) lines.add(1, "result: connected");
+        // 1.8.0 베타 3(B2-7): 동글 차면 켜짐/지원 동글/붙음 한 줄을 앞쪽에. 판단 방식은 넣지 않는다(결과만)
+        String dg = dongleLine();
+        if (dg != null) lines.add(1, dg);
+        // 1.8.0 베타 3(B3-6): 변조 판정이면 맨 앞에
+        if ("tampered".equals(get("verdict").trim())) lines.add(1, "tampered: yes");
         String url = build(lines);
         while (url.length() > MAX_URL && lines.size() > 2) {
             lines.remove(lines.size() - 1);
             url = build(lines);
         }
         return url;
+    }
+
+    /**
+     * QR의 동글 줄 "dongle: <on|off>/<지원 동글 yes|no|?>/<붙음 yes|no|?>". 동글 차만(아니면 null).
+     * 켜짐은 dongle(off가 아니면 씀)·dongle_set=on, 지원·붙음은 패키지 키 dongle_sup·dongle_seen(없으면 "?").
+     */
+    String dongleLine() {
+        String now = get("dongle").trim(), set = get("dongle_set").trim();
+        boolean on = (!now.isEmpty() && !"off".equals(now)) || "on".equals(set);
+        // 꺼진 차는 차주가 끈 경우(dongle_set=off)와 근거는 있으나 동글이 없는 경우(dongle_why=nodongle)만 동글 차로 본다
+        if (!on && !"off".equals(set) && !"nodongle".equals(get("dongle_why").trim())) return null;
+        return "dongle: " + (on ? "on" : "off") + "/" + ynq(get("dongle_sup")) + "/" + ynq(get("dongle_seen"));
+    }
+
+    private static String ynq(String s) {
+        s = s.trim();
+        return "yes".equals(s) || "no".equals(s) ? s : "?";
     }
 
     private String build(List<String> lines) {

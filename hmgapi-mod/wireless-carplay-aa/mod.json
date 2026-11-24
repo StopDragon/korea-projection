@@ -1,7 +1,7 @@
 {
   "id": "wireless-carplay-aa",
   "name": "Korea Projection: Wireless CarPlay + Android Auto",
-  "version": "2.4.5",
+  "version": "2.4.9",
   "hmgapi": ">=1.0.0",
   "authors": [
     "VysseCodes"
@@ -48,6 +48,12 @@
       "features": [
         "hmgapi.wifi"
       ]
+    },
+    {
+      "region": "KOR",
+      "props": {
+        "persist.kp.wifi_dongle": "1"
+      }
     }
   ],
   "parts": [
@@ -138,5 +144,68 @@
         "recipes/carplay-utils-converter.recipe"
       ]
     }
+  },
+  "network": {
+    "rules": [
+      {
+        "chain": "input",
+        "in": "hotspot",
+        "ip": 4,
+        "proto": "tcp+udp",
+        "ports": [
+          "5000-5001",
+          5020,
+          5353,
+          "6000-6003",
+          6011,
+          6020,
+          6030,
+          7000
+        ],
+        "both_ways": true,
+        "action": "accept",
+        "when": "settings.cp_firewall"
+      },
+      {
+        "chain": "input",
+        "in": "hotspot",
+        "ip": 6,
+        "proto": "tcp+udp",
+        "ports": [
+          "5000-5001",
+          5020,
+          5353,
+          "6000-6003",
+          6011,
+          6020,
+          6030,
+          6031,
+          7000
+        ],
+        "both_ways": true,
+        "action": "accept",
+        "when": "settings.cp_firewall"
+      },
+      {
+        "chain": "input",
+        "in": "hotspot",
+        "ip": 6,
+        "proto": "icmpv6",
+        "action": "accept",
+        "when": "settings.cp_firewall"
+      },
+      {
+        "chain": "input",
+        "in": "hotspot",
+        "to": "hotspot",
+        "ip": 4,
+        "proto": "tcp",
+        "ports": [
+          40515
+        ],
+        "action": "accept",
+        "when": "settings.aa_firewall"
+      }
+    ]
   }
 }

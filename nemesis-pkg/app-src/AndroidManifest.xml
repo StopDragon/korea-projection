@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="korea.projection.app"
-    android:versionCode="37"
-    android:versionName="1.7.4">
+    android:versionCode="45"
+    android:versionName="1.8.0">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="19" />
 
     <!-- 이 헤드유닛의 activity manager는 finish()에서도 GET_TASKS를 확인한다 (HMG-API에서 확인된 점) -->
     <uses-permission android:name="android.permission.GET_TASKS" />
+    <!-- 1.8.0 베타 3(B3-12): getWifiApConfiguration()으로 카플레이 AP 값의 길이만 읽는다(값은 남기지 않음). 일반 권한 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <application
         android:label="@string/app_name"
@@ -20,5 +22,9 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="landscape" />
+        <!-- 1.8.0 정식(C4): root 서비스의 명시적 am broadcast로만 불리는 화면 없는 receiver. 다른 앱은 부를 수 없다 -->
+        <receiver
+            android:name=".ApCfgReceiver"
+            android:exported="false" />
     </application>
 </manifest>

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+# 이 파일을 고친 버전은 Korea Projection 지원 대상이 아닙니다. 공식 버전: https://github.com/StopDragon/korea-projection
 # 제보 파일 만들기(bin/status.sh make_report, 1.7.3부터 상태 화면 버튼)가 부른다: HMG-API Car Report를 USB에 저장한다(`hmgapid engine report --usb`).
 # 새 차를 추가하려면 이 파일(그 차에서 직접 찾은 훅 지점 이름)이 필요하다. 만드는 데 1분쯤 걸려서,
 # 1.7.0: status.sh --collect(뒤에서 도는 로그 모으기)가 마지막 단계로 부른다. 끝나면 리포트 진행 기록에 "USB를 빼셔도 됩니다"를 쓴다.
@@ -47,6 +48,7 @@ ipmask() {
     gsub(/[0-9][0-9]*\.[0-9][0-9]*\.x\.x/, "x.x.x.x")
     gsub(/[[]removed[]]\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/, "[removed]")
     gsub(/[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]/, "xx:xx:xx:xx:xx:xx")
+    gsub(/[0-9A-Fa-f][0-9A-Fa-f][:-][0-9A-Fa-f][0-9A-Fa-f][:-][0-9A-Fa-f][0-9A-Fa-f][:-][*][*][:-][*][*][:-][*][*]/, "xx:xx:xx:**:**:**")
     print }' "$1"
 }
 # 가린 결과에 숫자 IPv4가 남았으면(이 busybox의 awk가 다르게 동작) 쓰지 않는다
@@ -120,7 +122,7 @@ elif [ $ok = 1 ]; then
 else
   # 시간이 넘었으면 HMG-API가 아직 쓰는 중일 수 있다: 조금 더 기다린 뒤 알린다
   [ $late = 1 ] && { sleep $CR_GRACE; sync; }
-  result fail "리포트(1·3번 파일)는 저장했지만 Car Report는 저장하지 못했습니다(필요하면 USB를 다시 꽂고 [제보 파일 만들기]). 이제 USB를 빼셔도 됩니다."
+  result fail "제보 파일(1·3번)은 저장했지만 Car Report는 저장하지 못했습니다(필요하면 USB를 다시 꽂고 [제보 파일 만들기]). 이제 USB를 빼셔도 됩니다."
 fi
 rm -rf $L
 exit 0

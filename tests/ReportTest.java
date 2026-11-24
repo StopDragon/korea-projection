@@ -7,6 +7,11 @@ package korea.projection.app;
 public class ReportTest {
     static int fails = 0;
 
+    static boolean hasRow(java.util.List<String[]> rows, String k, String v) {
+        for (String[] r : rows) if (k.equals(r[0]) && v.equals(r[1])) return true;
+        return false;
+    }
+
     static void check(String name, boolean ok) {
         System.out.println((ok ? "ok   " : "FAIL ") + name);
         if (!ok) fails++;
@@ -53,8 +58,8 @@ public class ReportTest {
         Report nomod = Report.parse(GOOD.replace("mod=yes\nmod_on=yes", "mod=no\nmod_on=no"));
         // 1.6.1: 차에 맞지 않는 다른 무선 모드(HMG-API 기본판) → 토스트 대신 Launch 화면 맨 위에서 지우라고 안내
         Report fm = Report.parse(GOOD.replace("mod=yes", "mod=yes\nmod_foreign=yes"));
-        check("다른 판 무선 모드 → 지우고 재부팅 안내, 빨강, 칸 '한국 차용 아님'", fm.verdict().startsWith("차에 있는 HMG-API 무선 모드가 한국 차용이 아닙니다")
-            && fm.level() == 2 && row(fm, "HMG-API 무선 모드").startsWith("한국 차용 아님") && fm.verdict().length() <= 80);
+        check("다른 판 무선 모드 → 지우고 재부팅 안내, 빨강, 칸 '국내용 아님', 패키지 A-36 문장과 같음(1.6.1의 80자 제한은 판정 줄이 줄바꿈되며 뺌)", fm.verdict().equals("차에 있는 HMG-API 무선 모드가 국내용이 아닙니다. HMG-API 앱에서 그 모드만 지우고(HMG-API는 지우지 말고) 적용한 뒤 재부팅해 주세요.")
+            && fm.level() == 2 && row(fm, "HMG-API 무선 모드").equals("국내용 아님 (지워야 함)") );
         Report fmc = Report.parse(GOOD.replace("mod=yes", "mod=yes\nmod_foreign=yes").replace("cp_conn=0", "cp_conn=1"));
         check("다른 판이어도 카플레이가 연결돼 있으면 빨강 안내 안 함", fmc.verdict().equals("무선 카플레이 연결됨") && fmc.level() == 0);
         check("확인 안 된 차는 그 안내가 먼저", Report.parse(GOOD.replace("mod=yes", "mod=yes\nmod_foreign=yes").replace("tested=yes", "tested=no")).verdict().startsWith("확인되지 않은 차"));
@@ -70,7 +75,7 @@ public class ReportTest {
         check("예전 상태 파일(mod_on·bridge 없음)도 초록, 칸은 '예'", oldfile.level() == 0 && "예".equals(row(oldfile, "HMG-API 무선 모드")));
         Report hoff = Report.parse(GOOD.replace("hooks=on", "hooks=off\nhookmap=mapped"));
         check("훅 꺼짐(mapped) → 'Check the map on this car' 안내, 노랑(지난 기록일 수 있음)", hoff.verdict().contains("Check the map on this car") && hoff.level() == 1 && row(hoff, "HMG-API 훅").startsWith("꺼짐 (mapped"));
-        check("  none → 지도 없음 제보 안내", Report.parse(GOOD.replace("hooks=on", "hooks=off\nhookmap=none")).verdict().contains("지도가 없어"));
+        check("  none → 지도 없음 제보 안내", Report.parse(GOOD.replace("hooks=on", "hooks=off\nhookmap=none")).verdict().contains("MAP이 없어"));
         check("  mismatch → 소프트웨어 불일치 안내", Report.parse(GOOD.replace("hooks=on", "hooks=off\nhookmap=mismatch")).verdict().contains("맞지 않아"));
         check("  상태 모름 → 재부팅 안내", Report.parse(GOOD.replace("hooks=on", "hooks=off")).verdict().contains("마지막 부팅 기록"));
         check("확인 안 된 차는 HMG-API가 없어도 노랑(문구와 색이 맞음)", Report.parse(GOOD.replace("tested=yes", "tested=no").replace("hmgapi=version 1.0.2 build 180185d 2026-11-04\n", "")).level() == 1);
@@ -158,7 +163,7 @@ public class ReportTest {
         check("  QR 요약에 ap_mode·stock_ssid", sd.contains("ap_mode: stock") && sd.contains("stock_ssid: carplay"));
         Report off = Report.parse(GOOD.replace("our_ap=yes", "our_ap=no").replace("our_dhcp=yes", "our_dhcp=no") + "stock_ssid=none\nap_mode=none\nstock_seen=yes\n");
         check("  순정 AP를 쓰는 차인데 지금 꺼져 있으면 '내비 Wi-Fi가 꺼져' 안내(우리 핫스팟 재부팅 안내 아님), 노랑",
-            off.verdict().equals("Wi-Fi가 지금 꺼져 있습니다. 아이폰을 연결해 보고, 안 되면 내비를 3분 후 재부팅해 주세요.") && off.level() == 1);
+            off.verdict().equals("Wi-Fi가 지금 꺼져 있습니다. 휴대폰을 연결해 보고, 안 되면 3분 후 재부팅해 주세요.") && off.level() == 1);
         // 1.7.0: Wi-Fi 장치(wlan0)가 생기지 않아 핫스팟을 못 켬(그랜저 IG #52·#53)
         Report nw = Report.parse(GOOD.replace("our_ap=yes", "our_ap=no") + "nowlan=yes\nap_mode=none\n");
         check("1.7.0 wlan0 없음 → 'Wi-Fi 장치가 켜지지 않아' 안내(재부팅·리포트)", nw.verdict().startsWith("Wi-Fi 장치가 켜지지 않아 핫스팟을 켜지 못했습니다"));
@@ -178,7 +183,7 @@ public class ReportTest {
         check("  보여 주는 시간이 지난 줄(리뷰 M3)은 뺌", fresh.size() == 2 && "네 번째".equals(fresh.get(0)[1]) && "세 번째".equals(fresh.get(1)[1]));
         check("  문구 안의 띄어쓰기는 그대로", "지난 부팅 안내".equals(Report.notices(nt, "boot-B", 1).get(0)[1]));
         check("1.7.1 모드 칸: 새 판 대기 중이면 차의 판과 '대기 중', 아니면 판만, 예전 파일은 '켜짐' 그대로",
-            "켜짐 (2.2.0, 새 판으로 바꾸기 대기 중)".equals(row(Report.parse(GOOD + "modver=2.2.0\nmod_pending=yes\n"), "HMG-API 무선 모드"))
+            "켜짐 (2.2.0, 새 버전으로 바꾸기 대기 중)".equals(row(Report.parse(GOOD + "modver=2.2.0\nmod_pending=yes\n"), "HMG-API 무선 모드"))
             && "켜짐 (2.3.0)".equals(row(Report.parse(GOOD + "modver=2.3.0\nmod_pending=no\n"), "HMG-API 무선 모드"))
             && "켜짐".equals(row(r, "HMG-API 무선 모드")));
         String mq = java.net.URLDecoder.decode(Report.parse(GOOD + "modver=2.2.0\nmod_pending=yes\n").issueUrl(), "UTF-8");
@@ -197,8 +202,8 @@ public class ReportTest {
         check("  지난 부팅·부팅 id 모름·파일 없음이면 없음", Report.hints(hb, "boot-B", now).isEmpty() && Report.hints(hb, null, now).isEmpty()
             && Report.hints(null, "boot-A", now).isEmpty());
         java.util.List<String[]> h1 = Report.hints(hb.replace("aa=\naa_t=", "aa=bt\naa_t=1700000950"), "boot-A", now);
-        check("  aa=bt → '안드로이드 폰의 블루투스를 껐다 켜 주세요(…다시 연결)' 노랑 한 줄(준비됨 줄 없음)", h1.size() == 1 && "1".equals(h1.get(0)[0])
-            && h1.get(0)[1].startsWith("안드로이드 폰의 블루투스를 껐다 켜 주세요") && h1.get(0)[1].contains("내비 블루투스 화면에서 폰을 다시 연결"));
+        check("  aa=bt → '휴대폰의 블루투스를 껐다 켜 주세요(…다시 연결)' 노랑 한 줄(준비됨 줄 없음)", h1.size() == 1 && "1".equals(h1.get(0)[0])
+            && h1.get(0)[1].startsWith("휴대폰의 블루투스를 껐다 켜 주세요") && h1.get(0)[1].contains("내비 블루투스 화면에서 휴대폰을 다시 연결"));
         check("  aa=cpwait → '카플레이가 연결되어 있어 안드로이드 오토는 기다립니다'",
             Report.hints(hb.replace("aa=\naa_t=", "aa=cpwait\naa_t=1700000950"), "boot-A", now).get(0)[1].equals("카플레이가 연결되어 있어 안드로이드 오토는 기다립니다."));
         java.util.List<String[]> h2 = Report.hints(hb.replace("aa=\naa_t=", "aa=ok\naa_t=1700000980"), "boot-A", now);
@@ -207,7 +212,7 @@ public class ReportTest {
             Report.hints(hb.replace("aa=\naa_t=", "aa=bt\naa_t=1700000000").replace("iph=\niph_t=", "iph=wifi\niph_t=1700000000"), "boot-A", now).isEmpty());
         java.util.List<String[]> h3 = Report.hints(hb.replace("iph=\niph_t=", "iph=wifi\niph_t=1700000990").replace("conf=\nconf_t=", "conf=wait\nconf_t=1700000990"), "boot-A", now);
         check("  conf=wait·iph=wifi 문구(설정 바뀜이 맨 위, 아이폰 Wi-Fi 지우고 다시 연결)", h3.size() == 2
-            && h3.get(0)[1].startsWith("Wi-Fi 설정이 바뀌었습니다") && h3.get(1)[1].contains("아이폰 설정 → Wi-Fi에서 차 네트워크를 지우고 다시 연결하세요"));
+            && h3.get(0)[1].startsWith("Wi-Fi 설정이 바뀌었습니다") && h3.get(1)[1].startsWith("휴대폰이 차 Wi-Fi에 오지 않습니다. 휴대폰 설정 → Wi-Fi에서 차 네트워크를 지우고 다시 연결하세요"));
         check("  안내 문구에 SSID·비밀번호 같은 값이 들어갈 자리가 없음(코드만 읽음)",
             Report.hints(hb.replace("aa=\n", "aa=MyNet secret\n"), "boot-A", now).isEmpty());
         // 1.7.3(R-2·R-5): [제보 파일 만들기] 버튼
@@ -255,7 +260,7 @@ public class ReportTest {
             && !Report.REQ_WRITE_FAILED.contains("Launch") && Report.REQ_SENT.split("\\. ").length <= 2
             && Report.REQ_LATE >= Report.REQ_FAIL);
         check("  판정 안내에 'Launch로 리포트'가 남지 않음(버튼 안내로 바뀜)",
-            Report.parse(GOOD.replace("hooks=on", "hooks=on\nmod_hooks=off")).verdict().contains("[제보 파일 만들기]로 리포트를")
+            Report.parse(GOOD.replace("hooks=on", "hooks=on\nmod_hooks=off")).verdict().contains("[제보 파일 만들기]로 제보 파일을 보내 주세요.")
             && !Report.parse(GOOD.replace("our_ap=yes", "our_ap=no\nnowlan=yes")).verdict().contains("Launch로"));
         // --- 1.7.3 2b: U-2·U-3·U-4·U-5·U-7 ---
         Report pRun = Report.parse("pct=40\nstate=run\nstage=무선 모드를 설치하는 중입니다\nstart=1700000000\nt=1700000990\nboot=boot-A\nstep=5/5\n");
@@ -303,7 +308,7 @@ public class ReportTest {
         // 1.7.4(B-8 ②): 고정한 차만 "무선 모드 고정" 줄(판 번호 또는 판 모름), 고정 없으면 줄 없음
         Report pinA = Report.parse("mod=yes\nmod_on=yes\nmod_pin=2.4.1\n"), pinB = Report.parse("mod=yes\nmod_on=yes\nmod_pin=old\n"), pinC = Report.parse("mod=yes\nmod_on=yes\nmod_pin=\n");
         check("1.7.4 B-8 ②: 상태 화면 표에 '무선 모드 고정' 줄(2.4.1 / 고정됨(판 모름)), 고정 없으면 없음",
-            pinRow(pinA).equals("2.4.1") && pinRow(pinB).equals("고정됨(판 모름)") && pinRow(pinC) == null);
+            pinRow(pinA).equals("2.4.1") && pinRow(pinB).equals("고정됨(버전 모름)") && pinRow(pinC) == null);
         check("  B-7·B-8 리뷰: 마지막 거절에서 1800초(900의 2배) 넘게 비면 새로 시작(-1), 그 전이면 이어짐, 시각이 거꾸로면 -1",
             Report.RB_STUCK_GAP == 1800 && Report.stuckSince("boot-A 100 200", "boot-A", 1999) == 100
             && Report.stuckSince("boot-A 100 200", "boot-A", 2000) == -1 && Report.stuckSince("boot-A 300 200", "boot-A", 400) == -1
@@ -331,10 +336,10 @@ public class ReportTest {
         check("  베타 1 리뷰 3: 안내 문구(한 문장)", Report.RB_NOWATCH.equals("NEMESIS에서 Launch를 다시 누른 뒤 눌러 주세요."));
         // 베타 1 리뷰 A: 기기는 Wi-Fi에 붙었는데 카플레이가 안 열림
         java.util.List<String[]> hn = Report.hints("boot=boot-A\naa_ready=\naa=\naa_t=\niph=nocp\niph_t=1700000990\nconf=\nconf_t=\n", "boot-A", 1700001000L);
-        check("베타 1 리뷰 A: iph=nocp → '폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 내비를 재부팅해 주세요.' 노랑",
-            hn.size() == 1 && "1".equals(hn.get(0)[0]) && "폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 내비를 재부팅해 주세요.".equals(hn.get(0)[1]));
-        check("2b U-4·1.7.4 소유자 문구: 준비됨 문구: 무선 AA 켜진 차(순정 AP 차 포함)는 '무선 카플레이·안드로이드 오토 준비됨.', AA 끈 차·옛 상태 파일은 '무선 카플레이 준비됨.'",
-            Report.parse(GOOD + "aa=yes\n").verdict().equals(Report.READY_BOTH) && Report.READY_BOTH.equals("무선 카플레이·안드로이드 오토 준비됨.")
+        check("베타 1 리뷰 A: iph=nocp → '휴대폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 재부팅해 주세요.' 노랑",
+            hn.size() == 1 && "1".equals(hn.get(0)[0]) && "휴대폰이 차 Wi-Fi에 연결됐지만 카플레이가 시작되지 않았습니다. 재부팅해 주세요.".equals(hn.get(0)[1]));
+        check("2b U-4·1.7.4 소유자 문구: 준비됨 문구: 무선 AA 켜진 차(순정 AP 차 포함)는 '무선 프로젝션 준비됨.', AA 끈 차·옛 상태 파일은 '무선 카플레이 준비됨.'",
+            Report.parse(GOOD + "aa=yes\n").verdict().equals(Report.READY_BOTH) && Report.READY_BOTH.equals("무선 프로젝션 준비됨.")
             && Report.parse(GOOD + "aa=no\n").verdict().equals("무선 카플레이 준비됨.")
             && !Report.parse(GOOD + "aa=no\n").verdict().contains("안드로이드") && r.verdict().startsWith("무선 카플레이 준비됨")
             && Report.parse(GOOD.replace("our_ap=yes", "our_ap=no").replace("our_dhcp=yes", "our_dhcp=no") + "ap_mode=stock\naa=yes\n").verdict().equals(Report.READY_BOTH)
@@ -349,10 +354,10 @@ public class ReportTest {
         check("2b U-7: 단계 표시 'step=5/5' → '단계 5/5', 옛 형식(줄 없음)·빈 값·깨진 값은 ''", "단계 5/5".equals(pRun.progStep())
             && "".equals(pRb.progStep()) && "".equals(pDone.progStep()) && "".equals(Report.parse("step=6/5\n").progStep())
             && "".equals(Report.parse("step=x/5\n").progStep()) && "".equals(Report.parse("step=3/\n").progStep()));
-        check("  10분(600초) 넘으면 '평소보다 오래 걸립니다. 15분이 지나도 그대로면 내비를 재부팅해 주세요.', 그 전은 ''",
+        check("  10분(600초) 넘으면 '평소보다 오래 걸리고 있습니다. 15분이 지나도 그대로면 강제로 재부팅해 주세요.', 그 전은 ''",
             "".equals(pRun.progSlow(1700000599L)) && Report.SLOW_MSG.equals(pRun.progSlow(1700000600L))
-            && Report.SLOW_MSG.equals("평소보다 오래 걸립니다. 15분이 지나도 그대로면 내비를 재부팅해 주세요.")
-            && Report.PROGRESS_HINT.equals("보통 5분 안에 끝납니다. 끝날 때까지 내비를 끄지 마세요.") && Report.SLOW < Report.STALE);
+            && Report.SLOW_MSG.equals("평소보다 오래 걸리고 있습니다. 15분이 지나도 그대로면 강제로 재부팅해 주세요.")
+            && Report.PROGRESS_HINT.equals("일반적으로 5분 안에 완료됩니다. 끝날 때까지 전원을 끄지 마세요.") && Report.SLOW < Report.STALE);
         // --- 1.7.3 3단계: 판정은 status.sh 한 곳(K-5), 앱은 결과를 그대로 보임 ---
         String V3 = GOOD + "verdict=nochip\nverdict_lv=2\nverdict_msg=이 차는 Wi-Fi 칩이 켜지지 않아 지원하기 어렵습니다. USB Wi-Fi 동글로 쓰는 방법을 준비하고 있습니다.\nverdict_end=yes\nfirst=\ns1=설치: 안 됨(위 안내를 보세요)\ns2=무선 Wi-Fi: 칩이 켜지지 않음\ns3=폰 연결: 지금 연결된 카플레이 없음\n";
         Report v3 = Report.parse(V3);
@@ -370,6 +375,117 @@ public class ReportTest {
         check("3단계 K-5: QR 요약 앞쪽에 verdict(상태 화면·리포트와 같은 값)", q3.contains("(QR summary)\nverdict: nochip\n"));
         String qc = java.net.URLDecoder.decode(Report.parse(V3.replace("verdict=nochip", "verdict=newconnected")).issueUrl(), "UTF-8");
         check("3단계 U-10: 확인 안 된 차가 연결되면 QR 요약 맨 앞에 result: connected", qc.contains("(QR summary)\nresult: connected\nverdict: newconnected\n"));
+        // --- 1.8.0 베타 3: QR 앞쪽 변조·동글 줄(B3-6, B2-7) ---
+        String qt = java.net.URLDecoder.decode(Report.parse(V3.replace("verdict=nochip", "verdict=tampered")).issueUrl(), "UTF-8");
+        check("베타 3 B3-6: 변조 판정이면 QR 요약 맨 앞에 tampered: yes", qt.contains("(QR summary)\ntampered: yes\nverdict: tampered\n"));
+        check("베타 3 B3-6: 변조가 아니면 tampered 줄 없음", !q3.contains("tampered") && !qc.contains("tampered"));
+        Report dOn = Report.parse(V3 + "dongle=ok\ndongle_set=auto\ndongle_sup=yes\ndongle_seen=yes\n");
+        String qd = java.net.URLDecoder.decode(dOn.issueUrl(), "UTF-8");
+        check("베타 3 B2-7: 동글을 쓰는 차는 QR 앞쪽에 dongle: on/yes/yes", qd.contains("(QR summary)\ndongle: on/yes/yes\nverdict: nochip\n"));
+        check("베타 3 B2-7: 지원 동글 아님·안 붙음은 no", "dongle: on/no/no".equals(Report.parse(V3 + "dongle=notlisted\ndongle_sup=no\ndongle_seen=no\n").dongleLine()));
+        check("베타 3 B2-7: 패키지가 dongle_sup=unknown(기록 없음)이면 ?", "dongle: on/?/no".equals(Report.parse(V3 + "dongle=up\ndongle_sup=unknown\ndongle_seen=no\n").dongleLine()));
+        check("베타 3 B2-7: 패키지 키가 없으면(옛 상태 파일) ?", "dongle: on/?/?".equals(Report.parse(V3 + "dongle=up\n").dongleLine())
+            && "dongle: on/?/?".equals(Report.parse(V3 + "dongle=off\ndongle_set=on\n").dongleLine()));
+        check("베타 3 B2-7: 차주가 끈 동글 차·동글 없는 근거 차는 off", "dongle: off/?/no".equals(Report.parse(V3 + "dongle=off\ndongle_set=off\ndongle_seen=no\n").dongleLine())
+            && "dongle: off/?/?".equals(Report.parse(V3 + "dongle=off\ndongle_set=auto\ndongle_why=nodongle\n").dongleLine()));
+        check("베타 3 B2-7: 동글과 상관없는 차(꺼짐·자동·내장 정상, 옛 파일)는 줄 없음",
+            Report.parse(V3 + "dongle=off\ndongle_set=auto\ndongle_why=builtin_ok\n").dongleLine() == null && v3.dongleLine() == null && !q3.contains("dongle:"));
+        check("베타 3: 동글 줄은 결과(on·off/yes·no·?)만, 판단 방식은 QR에 없음",
+            qd.split("\ndongle: ", -1).length == 2 && qd.split("\ndongle: ", -1)[1].split("\n", 2)[0].matches("(on|off)/(yes|no|\\?)/(yes|no|\\?)"));
+        Report dT = Report.parse(V3.replace("verdict=nochip", "verdict=tampered") + "dongle=ok\ndongle_sup=yes\ndongle_seen=yes\n");
+        String qdt = java.net.URLDecoder.decode(dT.issueUrl(), "UTF-8");
+        check("베타 3: 둘 다면 tampered → dongle → verdict 순서", qdt.contains("(QR summary)\ntampered: yes\ndongle: on/yes/yes\nverdict: tampered\n"));
+        StringBuilder dBig = new StringBuilder(V3.replace("verdict=nochip", "verdict=tampered") + "dongle=ok\ndongle_sup=yes\ndongle_seen=yes\n");
+        String pad = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        String[] padKeys = { "softap_strings", "hooks", "hookmap", "made", "modver", "stock_ssid", "bridge", "wpa" };
+        for (String k : padKeys) dBig.append(k).append('=').append(pad).append('\n');
+        String ub = Report.parse(dBig.toString()).issueUrl();
+        String ubd = java.net.URLDecoder.decode(ub, "UTF-8");
+        check("베타 3: 링크가 560자를 넘어 뒤에서 빼도 앞쪽 새 줄은 남음", ub.length() <= Report.MAX_URL && ubd.contains("(QR summary)\ntampered: yes\ndongle: on/yes/yes\n"));
+        // --- 1.8.0 베타 3 B3-12: AP 값 길이 기록(ApCfg) ---
+        String[] pOk = ApCfg.probe(new FakeWifi(new FakeCfg("KP-SSID-123", "pw1234567890")));
+        check("B3-12: 길이만 읽음(SSID 11, PSK 12, 이유 빈 값)", "11".equals(pOk[0]) && "12".equals(pOk[1]) && "".equals(pOk[2]));
+        String body = ApCfg.text(pOk, "1b2c3d4e-0000-1111-2222-333344445555", 1700000000L);
+        check("B3-12: 파일 다섯 줄(패키지 형식)", body.equals("ap_ssid_len_svc=11\nap_psk_len_svc=12\nap_psk_svc_err=\nap_svc_boot=1b2c3d4e-0000-1111-2222-333344445555\nap_svc_t=1700000000\n"));
+        check("B3-12: 파일에 SSID·PSK 값이 없음", !body.contains("KP-SSID") && !body.contains("pw1234567890"));
+        check("B3-12: 권한 거절(SecurityException) → perm, 길이 빈 값", java.util.Arrays.equals(ApCfg.probe(new DenyWifi()), new String[] { "", "", "perm" }));
+        check("B3-12: 메서드 없음 → nomethod", "nomethod".equals(ApCfg.probe(new Object())[2]));
+        check("B3-12: 설정이 null → null, WifiManager가 null → null", "null".equals(ApCfg.probe(new FakeWifi(null))[2]) && "null".equals(ApCfg.probe(null)[2]));
+        check("B3-12: 그 밖의 예외 → err(메시지는 남기지 않음)", java.util.Arrays.equals(ApCfg.probe(new BoomWifi()), new String[] { "", "", "err" }));
+        String[] pNoF = ApCfg.probe(new FakeWifi(new Object()));
+        check("B3-12: 필드 없음(순정이 아닌 설정) → nomethod", "".equals(pNoF[0]) && "nomethod".equals(pNoF[2]));
+        String[] pHalf = ApCfg.probe(new FakeWifi(new FakeCfg("abcdefghijkl", null)));
+        check("B3-12: PSK만 null → SSID 길이는 남고 이유 null", "12".equals(pHalf[0]) && "".equals(pHalf[1]) && "null".equals(pHalf[2]));
+        check("B3-12: 비공개 필드도 길이만 읽음", "5".equals(ApCfg.probe(new FakeWifi(new PrivCfg()))[0]) && "32".equals(ApCfg.probe(new FakeWifi(new PrivCfg()))[1]));
+        check("B3-12: 값은 영문·숫자·_·-만, 40자까지", "ab-c_1".equals(ApCfg.safe("a b-c_1!\n=")) && ApCfg.safe("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx").length() == 40 && "".equals(ApCfg.safe(null)));
+        check("B3-12: 같은 부팅이면 다시 하지 않음, 다른 부팅·파일 없음이면 함, boot_id 모르면 안 함",
+            !ApCfg.need(body, "1b2c3d4e-0000-1111-2222-333344445555\n") && ApCfg.need(body, "9999") && ApCfg.need(null, "9999")
+            && !ApCfg.need(null, "") && !ApCfg.need(null, null));
+        java.io.File td = java.nio.file.Files.createTempDirectory("kpap").toFile();
+        new ApCfg(td, new FakeWifi(new FakeCfg("KP-SSID-123", "pw1234567890")), "boot-1").run();
+        java.io.File af = new java.io.File(td, ApCfg.NAME);
+        String saved = StatusActivity.read(af.getPath());
+        check("B3-12: run()이 apcfg.len을 씀(600, 값 없음, 임시 파일 안 남음)", saved != null && saved.startsWith("ap_ssid_len_svc=11\nap_psk_len_svc=12\nap_psk_svc_err=\nap_svc_boot=boot-1\n")
+            && !saved.contains("pw1234567890") && "rw-------".equals(java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(af.toPath())))
+            && !new java.io.File(td, ApCfg.NAME + ".tmp").exists());
+        new ApCfg(td, new DenyWifi(), "boot-1").run();
+        check("B3-12: 같은 부팅에 다시 불러도 그대로", saved.equals(StatusActivity.read(af.getPath())));
+        new ApCfg(td, new DenyWifi(), "boot-2").run();
+        String s2 = StatusActivity.read(af.getPath());
+        check("B3-12: 다음 부팅에 권한이 없으면 perm으로 다시 씀", s2 != null && s2.contains("ap_psk_svc_err=perm\n") && s2.contains("ap_svc_boot=boot-2\n") && s2.contains("ap_ssid_len_svc=\n"));
+        new ApCfg(new java.io.File(td, "no-such-dir"), new FakeWifi(new FakeCfg("a", "b")), "boot-3").run();
+        check("B3-12: 쓸 수 없는 폴더여도 예외가 밖으로 나오지 않음", true);
+        af.delete(); td.delete();
+        // --- 1.8.0 정식 C4: 서비스 값 건네기(ApCfgReceiver) ---
+        check("C4: 16진은 소문자 2자리씩", "00ff7f80".equals(ApCfgReceiver.hex(new byte[] { 0, -1, 0x7f, (byte) 0x80 })) && "".equals(ApCfgReceiver.hex(new byte[0])));
+        String vb = ApCfgReceiver.body(new FakeWifi(new FakeCfg("KP-SSID 1", "pw=12345678")), "1b2c3d4e-0000\n");
+        check("C4: 세 줄(boot, ssid_hex, psk_hex), ASCII·공백·= 그대로 바이트로",
+            "boot=1b2c3d4e-0000\nssid_hex=4b502d535349442031\npsk_hex=70773d3132333435363738\n".equals(vb));
+        check("C4: 비ASCII는 UTF-8 바이트로(한글 '카' = ecb9b4)", ApCfgReceiver.body(new FakeWifi(new FakeCfg("카", "pw12345678")), "b").contains("\nssid_hex=ecb9b4\n"));
+        check("C4: 내용에 값 글자 그대로는 없음", !vb.contains("KP-SSID") && !vb.contains("pw=12345678"));
+        check("C4: 못 읽으면 null(boot 모름·WifiManager 없음·권한·예외·설정 null·필드 없음·값 null·빈 값)",
+            ApCfgReceiver.body(new FakeWifi(new FakeCfg("a", "b")), null) == null && ApCfgReceiver.body(new FakeWifi(new FakeCfg("a", "b")), " \n") == null
+            && ApCfgReceiver.body(null, "b") == null && ApCfgReceiver.body(new DenyWifi(), "b") == null && ApCfgReceiver.body(new BoomWifi(), "b") == null
+            && ApCfgReceiver.body(new FakeWifi(null), "b") == null && ApCfgReceiver.body(new FakeWifi(new Object()), "b") == null
+            && ApCfgReceiver.body(new FakeWifi(new FakeCfg("a", null)), "b") == null && ApCfgReceiver.body(new FakeWifi(new FakeCfg("", "pw12345678")), "b") == null
+            && ApCfgReceiver.body(new Object(), "b") == null);
+        check("C4: 비공개 필드도 읽음", ApCfgReceiver.body(new FakeWifi(new PrivCfg()), "b").startsWith("boot=b\nssid_hex=6162636465\n"));
+        java.io.ByteArrayOutputStream cap = new java.io.ByteArrayOutputStream();
+        java.io.PrintStream oldOut = System.out, oldErr = System.err, capPs = new java.io.PrintStream(cap, true, "UTF-8");
+        java.io.File vd = java.nio.file.Files.createTempDirectory("kpval").toFile();
+        java.io.File vf = new java.io.File(vd, ApCfgReceiver.NAME), vtmp = new java.io.File(vd, ApCfgReceiver.NAME + ".tmp");
+        boolean w1, w2, w3, w4, w5;
+        String v1, perm1, tmpLeft1, e2, perm2, e3;
+        System.setOut(capPs); System.setErr(capPs);
+        try {
+            w1 = ApCfgReceiver.save(vd, new FakeWifi(new FakeCfg("KP-SSID-123", "pw1234567890")), "boot-1\n");
+            v1 = StatusActivity.read(vf.getPath());
+            perm1 = java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(vf.toPath()));
+            tmpLeft1 = vtmp.exists() ? "tmp" : "";
+            java.nio.file.Files.write(vtmp.toPath(), "old".getBytes("UTF-8"));
+            w2 = ApCfgReceiver.save(vd, new DenyWifi(), "boot-1");
+            e2 = StatusActivity.read(vf.getPath());
+            perm2 = java.nio.file.attribute.PosixFilePermissions.toString(java.nio.file.Files.getPosixFilePermissions(vf.toPath()));
+            w3 = ApCfgReceiver.save(vd, new BoomWifi(), "boot-1");
+            e3 = StatusActivity.read(vf.getPath());
+            w5 = ApCfgReceiver.save(vd, new FakeWifi(new FakeCfg("KP-SSID-123", null)), null);
+            w4 = ApCfgReceiver.save(new java.io.File(vd, "no-such-dir"), new FakeWifi(new FakeCfg("KP-SSID-123", "pw1234567890")), "boot-1");
+        } finally {
+            System.setOut(oldOut); System.setErr(oldErr);
+        }
+        check("C4: save()가 apcfg.val을 씀(0600, 세 줄, 임시 파일 안 남음)", w1 && "boot=boot-1\nssid_hex=4b502d535349442d313233\npsk_hex=707731323334353637383930\n".equals(v1)
+            && "rw-------".equals(perm1) && tmpLeft1.isEmpty());
+        check("C4 리뷰 L2: 값을 못 읽으면 boot·err=noval 두 줄만(0600, 값 없음, 임시 파일 지움)", !w2 && !w3
+            && "boot=boot-1\nerr=noval\n".equals(e2) && "boot=boot-1\nerr=noval\n".equals(e3) && "rw-------".equals(perm2)
+            && !e2.contains("secret-value-should-not-leak") && !e2.contains("hex"));
+        check("C4 리뷰 L2: boot_id도 모르면 아무 파일도 없음(남아 있던 err 파일·임시 파일도 지움)", !w5 && !vf.exists() && !vtmp.exists());
+        check("C4 리뷰 L2: err 내용은 boot를 알 때만", "boot=b\nerr=noval\n".equals(ApCfgReceiver.errBody("b\n")) && ApCfgReceiver.errBody(" ") == null && ApCfgReceiver.errBody(null) == null);
+        check("C4: 쓸 수 없는 폴더여도 false, 예외가 밖으로 안 나옴", !w4);
+        String capped = new String(cap.toByteArray(), "UTF-8");
+        check("C4: 표준 출력·오류에 아무것도 안 찍음(값·예외 메시지 없음)", capped.isEmpty() && !capped.contains("secret-value-should-not-leak"));
+        check("C4: 액션 이름·파일 이름이 서비스와 정한 그대로", "korea.projection.app.action.APCFG".equals(ApCfgReceiver.ACTION) && "apcfg.val".equals(ApCfgReceiver.NAME)
+            && "/proc/sys/kernel/random/boot_id".equals(ApCfgReceiver.BOOT_ID));
+        vd.delete();
         // --- 2b 재리뷰 ---
         check("2b 재리뷰 중간 2: 재부팅을 막는 것은 진행 기록 '만드는 중'(이번 부팅)이나 내 요청이 아직 기다리는 중일 때뿐(실패한 요청은 막지 않음)",
             Report.rbBusy(true, noProg, "boot-A", now) && Report.rbBusy(false, instRun, "boot-A", now)
@@ -383,6 +499,28 @@ public class ReportTest {
         check("  /proc/uptime 읽기('123.45 67.8' → 123), 못 읽으면 -1", Report.upSec("123.45 67.8\n") == 123 && Report.upSec(null) == -1 && Report.upSec("x") == -1);
         check("2b 리뷰 L7: 끝난(done) 기록은 알림 숨기기 기준이 아님(부팅마다 다시 써서 다른 안내를 가리지 않게), 실패(fail)는 기준",
             pDone.progEndedAt("boot-A") == 0 && Report.parse("pct=100\nstate=fail\nt=1700000990\nboot=boot-A\n").progEndedAt("boot-A") == 1700000990L);
+        check("자세히: 카플레이 연결 값 없음 → '-', 있으면 'N개'", hasRow(Report.parse("pkgver=1.8.0\n").rows(), "카플레이 연결", "-")
+            && hasRow(Report.parse("cp_conn=1\n").rows(), "카플레이 연결", "1개"));
+        // --- 1.8.0 베타 2 문구 정리(11-23 소유자 규칙: 판→버전, 휴대폰, "내비를 재부팅"→재부팅, 지도→MAP, 함께면 무선 프로젝션) ---
+        String HK = GOOD.replace("hooks=on", "hooks=off\nhookmap=");
+        check("문구 정리 A-16~A-19: 훅 꺼짐 넷(옛 상태 파일), 패키지 문장과 같음",
+            Report.parse(HK.replace("hookmap=", "hookmap=mapped")).verdict().equals("HMG-API 훅이 꺼져 있습니다. HMG-API 앱 Settings에서 'Check the map on this car'를 누른 뒤 재부팅해 주세요.")
+            && Report.parse(HK.replace("hookmap=", "hookmap=none")).verdict().equals("HMG-API에 이 차의 MAP이 없어 훅이 꺼져 있습니다. QR로 제보해 주세요.")
+            && Report.parse(HK.replace("hookmap=", "hookmap=mismatch")).verdict().equals("HMG-API MAP이 이 차의 소프트웨어와 맞지 않아 훅이 꺼져 있습니다. QR로 제보해 주세요.")
+            && Report.parse(HK.replace("hookmap=", "hookmap=x")).verdict().equals("HMG-API 훅이 꺼져 있습니다(마지막 부팅 기록). 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요."));
+        check("문구 정리 A-21·A-41·A-42·A-50: 패키지 문장과 같음",
+            Report.parse(GOOD.replace("our_ap=yes", "our_ap=no")).verdict().equals("핫스팟이 꺼져 있습니다. 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요.")
+            && Report.parse(GOOD + "mod_hooks=off\n").verdict().equals("HMG-API가 이 차에서 무선 모드를 켜지 못했습니다(이 차와 맞지 않는 부분이 있음). 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 제보 파일을 보내 주세요.")
+            && Report.parse(GOOD.replace("feat_carplay=yes", "feat_carplay=no")).verdict().equals("무선 프로젝션 기능이 꺼져 있습니다. HMG-API 무선 모드를 확인해 주세요.")
+            && Report.parse(GOOD.replace("our_ap=yes", "our_ap=no") + "nowlan=yes\nap_mode=none\n").verdict().equals("Wi-Fi 장치가 켜지지 않아 핫스팟을 켜지 못했습니다. 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 제보 파일을 보내 주세요."));
+        check("문구 정리 B-63: 자세히 칸 'DHCP'(옛 'IP 나눠 주기 (DHCP)' 없음)", "예".equals(row(r, "DHCP")) && row(r, "IP 나눠 주기 (DHCP)") == null);
+        check("문구 정리 B-52: 훅 안 켜짐 칸 '제보 파일 참고'", "켜짐, 훅이 안 켜짐 (제보 파일 참고)".equals(row(Report.parse(GOOD + "mod_hooks=off\n"), "HMG-API 무선 모드")));
+        check("문구 정리 G-8: 요청 저장 실패 '재부팅한 뒤'", Report.REQ_WRITE_FAILED.equals("요청을 저장하지 못했습니다. 재부팅한 뒤 다시 눌러 주세요."));
+        check("문구 정리: 대기 중 무선 모드 칸 '이전 버전'·'새 버전'", "켜짐 (이전 버전, 새 버전으로 바꾸기 대기 중)".equals(row(Report.parse(GOOD + "mod_pending=yes\n"), "HMG-API 무선 모드")));
+        boolean ruleOk = true;
+        String[] srcs = { Report.READY_BOTH, Report.SLOW_MSG, Report.REQ_WRITE_FAILED, Report.UNINSTALL_HINT };
+        for (String s : srcs) if (s.contains("내비를 재부팅") || s.contains("내비를 3분") || s.contains("폰") && !s.contains("휴대폰")) ruleOk = false;
+        check("문구 정리: 상수 문구에 '내비를 재부팅'·'폰'(휴대폰 아님)이 없음", ruleOk);
         System.out.println(fails == 0 ? "Java 모두 통과" : "Java 실패 " + fails + "개");
         System.exit(fails == 0 ? 0 : 1);
     }
@@ -392,4 +530,24 @@ public class ReportTest {
         return null;
     }
 
+    // --- B3-12 시험용 가짜 WifiManager·설정(이름 있는 클래스) ---
+    public static class FakeCfg {
+        public String ConnectivitySSID, ConnectivityPSK;
+        FakeCfg(String s, String p) { ConnectivitySSID = s; ConnectivityPSK = p; }
+    }
+    static class PrivCfg {
+        private String ConnectivitySSID = "abcde";
+        private String ConnectivityPSK = "0123456789abcdef0123456789abcdef";
+    }
+    public static class FakeWifi {
+        final Object cfg;
+        FakeWifi(Object c) { cfg = c; }
+        public Object getWifiApConfiguration() { return cfg; }
+    }
+    public static class DenyWifi {
+        public Object getWifiApConfiguration() { throw new SecurityException("secret-value-should-not-leak"); }
+    }
+    public static class BoomWifi {
+        public Object getWifiApConfiguration() { throw new IllegalStateException("x"); }
+    }
 }

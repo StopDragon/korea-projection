@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "settings": [
+    {
+      "key": "tbt",
+      "type": "toggle",
+      "default": true,
+      "title": "Turn-by-turn on the cluster and HUD",
+      "apply": "rebuild"
+    },
+    {
+      "key": "tbt_fit",
+      "type": "toggle",
+      "default": true,
+      "apply": "restart",
+      "title": "Turn-by-turn fitted to the Hyundai/Kia navigation (near-turn view, distance bar)",
+      "description": "Korean build. On top of the stock CarPlay/Android Auto cluster codes: the near-turn view and distance bar as the car's own navigation draws them, arrows for turns the stock table lacks, rerouting text, and the Android Auto road-name hold. Off: the stock codes only (as 2.4.2)."
+    },
+    {
+      "key": "bridge",
+      "type": "toggle",
+      "default": true,
+      "title": "Wireless CarPlay (Bluetooth bridge and Wi-Fi sessions)",
+      "apply": "rebuild"
+    },
+    {
+      "key": "audio",
+      "type": "toggle",
+      "default": true,
+      "title": "CarPlay music and Siri over Wi-Fi (AAC, Opus)",
+      "apply": "rebuild"
+    },
+    {
+      "key": "now_playing",
+      "type": "toggle",
+      "default": true,
+      "title": "Song info on wireless CarPlay (cluster, media widget)",
+      "apply": "restart",
+      "description": "DiPO only asks the iPhone for song info on USB; HMG-API asks on wireless too. A hook in DiPO (no files changed)."
+    },
+    {
+      "key": "menu",
+      "type": "toggle",
+      "default": true,
+      "title": "Settings > Phone Projection opens Device Connections",
+      "apply": "restart",
+      "description": "A hook in the Settings app (no files changed). US/Canada only; other regions keep the stock choice. Not in the Korean build (its hook point is missing on some Korean firmware)."
+    },
+    {
+      "key": "usb_drives",
+      "type": "toggle",
+      "default": true,
+      "apply": "restart",
+      "title": "USB drives and hubs don't start wired Android Auto",
+      "description": "A hook in the Android Auto app (no files changed). Without it, a USB drive can block wireless Android Auto until the head unit restarts."
+    },
+    {
+      "key": "aa_ready_resend",
+      "type": "toggle",
+      "default": true,
+      "apply": "restart",
+      "title": "Wireless Android Auto: resend ready after phone projection starts",
+      "description": "Korean build. A hook in the Android Auto app (no files changed): when the phone projection app starts after the phone's wireless setup, the ready signal it missed is sent again. Only while Korea Projection runs its hotspot."
+    },
+    {
+      "key": "aa_name_hold",
+      "type": "toggle",
+      "default": true,
+      "apply": "restart",
+      "title": "Android Auto cluster: keep the turn icon when the phone sends a road name change for the same point",
+      "description": "Korean build, with the fitted turn-by-turn on. When the phone alternates a turn and a road name change for the same point, the cluster keeps the turn icon and only the road name changes. Off: name changes show at once."
+    },
+    {
+      "key": "star_popup_skip",
+      "type": "toggle",
+      "default": true,
+      "apply": "restart",
+      "title": "Star key: skip the stock phone projection hint popup",
+      "description": "Korean build. A hook in the phone projection app (no files changed): the star key set to the phone projection shortcut no longer opens the stock 'how to connect' popup while no phone is registered in the stock wireless list. It could cover the CarPlay screen and freeze the screen and keys. With a registered phone the stock device list popup stays. Off: stock."
+    },
+    {
+      "key": "cp_firewall",
+      "type": "toggle",
+      "default": true,
+      "apply": "rebuild",
+      "title": "Allow wireless CarPlay through the hotspot firewall",
+      "description": "Korean build: on by default. Some cars' stock firewalls (seen on the Casper Electric AX1EV 260902) open CarPlay's ports only on the wired link, so the iPhone joins the Wi-Fi and then drops. Accepts CarPlay's ports from the hotspot's own addresses only (IPv4 192.168.0.0/24, IPv6 link-local), TCP and UDP, as destination or source: 5000-5001, 5020, 5353, 6000-6003, 6011, 6020, 6030, 7000 (and 6031 on IPv6), plus ICMPv6. HMG-API manages the rules and removes them when this setting or the mod is off."
+    },
+    {
+      "key": "aa_firewall",
+      "type": "toggle",
+      "default": true,
+      "apply": "rebuild",
+      "title": "Allow wireless Android Auto through the hotspot firewall",
+      "description": "Korean build: on by default. Cars with the stock whitelist firewall (seen on the Casper Electric AX1EV 260902) drop the phone's TCP connection to the head unit's Android Auto port, so the phone joins the Wi-Fi and then leaves. Accepts TCP to port 40515 (the port the stock receiver sends the phone) from and to the hotspot's own IPv4 addresses only (192.168.0.0/24). HMG-API manages the rule and removes it when this setting or the mod is off. Cars without that firewall are not affected."
+    }
+  ]
+}

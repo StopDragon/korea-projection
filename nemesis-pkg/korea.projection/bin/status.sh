@@ -1,4 +1,5 @@
 #!/system/bin/sh
+# 이 파일을 고친 버전은 Korea Projection 지원 대상이 아닙니다. 공식 버전: https://github.com/StopDragon/korea-projection
 # NEMESIS Manager > Korea Projection > Launch: 상태 화면용 상태 파일과 차량 제보용 리포트.
 # 1.7.3(소유자 결정 2026-11-09): Launch는 상태 파일만 쓰고 화면을 연다. 제보 파일(USB의 KoreaProjection-report 폴더의
 # 1-report.md, 2-car-report.json, 3-log.txt)은 상태 화면의 [제보 파일 만들기] 버튼을 눌렀을 때만 만든다
@@ -104,6 +105,8 @@ lastmask() {
     END { s = NR > n ? NR - n + 1 : 1
       for (i = s; i <= NR; i++) { l = a[i % n]
         gsub(/[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]/, "xx:xx:xx:xx:xx:xx", l)
+        # 정식(beta3-reports 8-4): 순정 BT 로그의 반쪽 주소(XX:XX:XX:**:**:**)도 가린다(KPMASK와 같은 규칙)
+        gsub(/[0-9A-Fa-f][0-9A-Fa-f][:-][0-9A-Fa-f][0-9A-Fa-f][:-][0-9A-Fa-f][0-9A-Fa-f][:-][*][*][:-][*][*][:-][*][*]/, "xx:xx:xx:**:**:**", l)
         gsub(/[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/, "x.x.x.x", l)
         gsub(/[Ff][Ee]80:[0-9A-Fa-f:]*/, "fe80:x", l)
         print l } }'
@@ -145,15 +148,36 @@ logs() {
   cplog
 }
 # 1.7.0: 디버그 로그(cp.log, 차주가 켰을 때만)는 운행 기록이라 공개 이슈에 붙는 3-log.txt에 넣지 않는다(CLAUDE.md 5장,
-# 리뷰 H1). USB에 따로 4-debug-private.txt로 두고 "공개 첨부 금지"를 맨 위에 적는다. 마지막 8000줄만 먼저 자른 뒤
+# 리뷰 H1). USB에 따로 4-debug-private.txt로 둔다(베타 3부터 제보 폴더, 동글 허용 판단 정보만 $PDIR/5-dongle-private.txt). 마지막 8000줄만 먼저 자른 뒤
 # KPMASK로 가린다(리뷰 M2: 6MB 전체를 가리면 오래 걸린다). 가리기 awk가 안 되면 만들지 않는다.
-privlog() {
-  echo "# Korea Projection 디버그 로그 (비공개)"
+# 베타 3(소유자 결정 11-23 "핸드폰 이름 들어가도 된다. 우리가 어차피 지워주잖아. 개인정보 공개는 본인 책임"): 디버그 로그는 제보 폴더($RDIR)의
+# 4-debug-private.txt로(이름은 도구와 맞춰 그대로). 공개로 올라오면 받아 두고 링크를 내린다(docs/issue-reply-guide.md 5장).
+# 예외: 동글 판정 정보(dongle_info 절)와 무선 모드 작성자 키는 공개 저장소·답글에 나가면 안 되므로
+# 따로 $PDIR의 5-dongle-private.txt(dgprivlog)에 둔다
+debuglog() {
+  echo "# Korea Projection 디버그 로그"
   echo
-  echo "**이 파일(KoreaProjection-private 폴더)은 GitHub 이슈에 올리지 마세요.** 운행 기록(길안내·음악 등)이 들어 있습니다."
-  echo "필요할 때 개발자에게 따로(카톡·메일) 보내 주세요. 폰 이름·MAC·IP·전화번호는 가렸지만, 모든 꼴을 장담하지는 못합니다."
+  echo "휴대폰 이름 등 개인정보가 들어 있을 수 있습니다."
   echo
+  # 베타 3(B3-12): softap.conf 위치·형식 버전·문자열별 길이(내용 없음)
+  [ -s $SOFTAP_DIAGF ] && { echo "- softap.conf 형식(위치·버전·문자열 수·문자열별 길이·고른 비밀번호 길이): $(cat $SOFTAP_DIAGF 2>/dev/null)"; echo; }
+  if [ -s $BK/debug.why ]; then echo "## 디버그 로그 자동 켜짐 이유(최근 8번: epoch, 부팅 뒤 초, 코드, 시각)"; $BB cat $BK/debug.why 2>/dev/null; echo; fi
+  [ -f $W/cp.log ] || return 0
+  echo "## 디버그 로그"
   $BB cat $W/cp.log.1 $W/cp.log 2>/dev/null | $BB awk -v n=8000 'BEGIN { n = n + 0 } { a[NR % n] = $0 } END { s = NR > n ? NR - n + 1 : 1; for (i = s; i <= NR; i++) print a[i % n] }' | $BB awk "$KPMASK"
+}
+dgprivlog() {
+  echo "# Korea Projection 동글·무선 모드 비공개 기록"
+  echo
+  echo "**이 파일(KoreaProjection-private 폴더)은 GitHub 이슈에 올리지 마세요.** 필요할 때 개발자에게 따로(메일) 보내 주세요."
+  echo "동글을 쓰는 차는 동글 MAC 앞 3바이트(제조사 부분)와 USB 번호가 들어 있습니다(지원 동글 확인용)."
+  echo
+  # 배포판: 동글 조사 정보는 공개 리포트가 아니라 여기에 둔다
+  # 디버그 로그를 켠 차도 동글 조사 정보(커널·모듈·USB 장치)를 남긴다(동글 지원 준비용, 1.7.4 Q-2)
+  if [ -s $DINFO ]; then $BB cat $DINFO; echo; elif [ -f $DG_ON ] || [ -f $BK/dongle.used ] || [ -f $W/cp.log ]; then dongle_info 2>/dev/null; echo; fi
+  # 베타 3(B3-10): 무선 모드 작성자 키(다른 사람 모드면 어느 키인지 가르려고, 비공개에만)
+  [ -f $HMGDATA/mods/$MOD_ID/mod.json ] && { echo "- 무선 모드 작성자 키(uuid): $(mod_uuid)$([ -f $BK/mod.otherkey ] && echo ", 다른 키 기록: $(cat $BK/mod.otherkey 2>/dev/null)")"; echo; }
+  return 0
 }
 # 1.7.0(소유자 결정 2026-11-08): Launch는 폰 프로젝션과 관련된 기록을 가능한 모두 모은다. 카플레이(iAP2·DiPO·CarPlay),
 # 계기판·HUD 길안내(NavigationCluster·ClusterService·Navi), 폰에 보내는 차량 데이터(속도 VehicleInfoManager·SystemService,
@@ -170,12 +194,19 @@ cpdedup() {
     pk = k; c = 1; last = $0 }
     END { if (NR > 0) print (c > 1 ? "[x" c "] " : "") last }'
 }
+# 1.8.0 PF-4: 제보 한 번에 logcat -d를 다섯 번 읽던 것을 한 번만 읽는다(니로 2026-11-15: 제보 중 CPU 81~99%, 소리 버퍼 1100ms).
+# make_report가 $LCTMP에 한 번 받아 두고(umask 077이라 600, 폰 이름이 들어갈 수 있는 원본이라 $W 안에만) 끝나면 지운다.
+# 받아 둔 것이 없으면(리포트만 따로 부를 때·PC 시험) 예전처럼 바로 읽는다.
+LCTMP=${LCTMP:-$W/logcat.tmp}
+# 배포판: 비공개 파일에 넣을 동글 조사 칸(make_report가 logcat을 받아 둔 동안 만듦)
+DINFO=${DINFO:-$W/dinfo.tmp}
+lcd() { if [ "$LC_ON" = 1 ] && [ -f $LCTMP ]; then $BB cat $LCTMP; else logcat -d -v time 2>/dev/null; fi; }
 cplog() {
   echo "x" | $BB awk "$KPMASK" >/dev/null 2>&1 || { echo "(이 내비의 busybox로는 가릴 수 없어 넣지 않음)"; return 0; }
   # 디버그 로그의 DROP과 달리 교차로 이름 줄은 버리지 않는다(위치는 KPMASK가 가린다, 반복은 cpdedup이 줄인다)
   _cd='iAPSendMessage\(\) : done with \(0x00\)|iAPSendMessage Command Received|getCANSTatus = true|getCANStatus|pcm_write failed'
   echo x | $BB grep -E "$_cd" >/dev/null 2>&1; [ $? -le 1 ] || _cd='^$'
-  logcat -d -v time 2>/dev/null | $BB grep -E "$CPTAGS" | $BB grep -v -E "$_cd" \
+  lcd | $BB grep -E "$CPTAGS" | $BB grep -v -E "$_cd" \
     | cpdedup | $BB awk -v n=3000 'BEGIN { n = n + 0 } { a[NR % n] = $0 } END { s = NR > n ? NR - n + 1 : 1; for (i = s; i <= NR; i++) print a[i % n] }' \
     | $BB awk "$KPMASK" | lastmask 3000
 }
@@ -189,7 +220,7 @@ PPNOISE=' [VDI]/ModeManagerService *\('
 PPKEYS='[Pp]rojection|[Aa]ndroid ?[Aa]uto|[Rr][Ff][Cc][Oo][Mm][Mm]|WifiStart|WifiInfo|Already AA'
 pplog() {
   echo "x" | $BB awk "$KPMASK" >/dev/null 2>&1 || { echo "(이 내비의 busybox로는 가릴 수 없어 넣지 않음)"; return 0; }
-  logcat -d -v time 2>/dev/null | $BB grep -E "$PPTAGS|$PPKEYS" | $BB grep -v -E "$PPNOISE" | $BB awk "$KPMASK" | lastmask 400
+  lcd | $BB grep -E "$PPTAGS|$PPKEYS" | $BB grep -v -E "$PPNOISE" | $BB awk "$KPMASK" | lastmask 400
 }
 # Wi-Fi 서비스·드라이버·핫스팟 쪽 logcat(1.5.4: 그랜저 하이브리드 #12에서 핫스팟이 30초마다 끊긴 원인을 보려고).
 # 지금 logcat 버퍼에 남은 것만 본다(-d). Wi-Fi 이름·비밀번호·주변 네트워크·기기 이름이 나올 수 있는 줄은
@@ -199,7 +230,7 @@ pplog() {
 WIFITAGS=' [VDIWEF]/(WifiStateMachine|WifiService|WifiController|WifiHW|WifiNative[^ (]*|SoftapController|SoftApController|wpa_supplicant|hostapd|Tethering|NetworkManagementService|CommandListener|bcmdhd|dhd) *\('
 WIFIDROP='ssid|psk|pass|name|bssid|extra:'
 wifilog() {
-  logcat -d -v time 2>/dev/null | $BB grep -E "$WIFITAGS" | $BB grep -v -i -E "$WIFIDROP" | lastmask 300
+  lcd | $BB grep -E "$WIFITAGS" | $BB grep -v -i -E "$WIFIDROP" | lastmask 300
 }
 
 # 1.7.2(P-8·P-12): 연결 진단 줄. 숫자·짧은 영문 값만 넣는다(SSID·비밀번호·폰 이름·MAC·IP 없음).
@@ -207,7 +238,7 @@ wifilog() {
 # 줄의 개수만 센다(줄 내용은 넣지 않는다). 부팅 로그는 버퍼가 짧아 대개 남지 않는다("버퍼에 없음").
 diag() {
   echo "## 연결 진단 (숫자·짧은 값만)"
-  logcat -d -v time 2>/dev/null | $BB awk '
+  lcd | $BB awk '
     function clean(s) { gsub(/[^A-Za-z0-9 (),.\/-]/, "", s); return substr(s, 1, 120) }
     / [VDIWEF]\/WifiService *\(/ && index($0, "Last mode: ") > 0 { lm = clean(substr($0, index($0, "Last mode: ") + 11)) }
     / [VDIWEF]\/WifiService *\(/ && index($0, "[Feature] ") > 0 { ft = clean(substr($0, index($0, "[Feature] ") + 10)) }
@@ -296,6 +327,47 @@ KMOUNTS=${KMOUNTS:-/proc/mounts}
 # 우리 AP를 멈출 수 있음). 이 칸은 어떤 바이너리도 실행하지 않는다
 STOCK_HOSTAPD=${STOCK_HOSTAPD:-/system/bin/hostapd}
 # 허용 글자(영문·숫자·빈칸·. _ : / ( ) + = , # -)만 남기고 80자로 자른다(하위 셸 하나: busybox 1.8.1 awk)
+# 베타 2(조사 문서 9-3 진단, 소유자 승인 11-20): 순정 방화벽이 wlan0을 막는가. iptables -S를 awk로 읽어 예/아니요만 낸다
+# (규칙 줄 내용·주소는 셸 변수에도 담지 않음). 순정 체인 WL_WLAN0_IN이 있는가, 거기에 카플레이 포트 7000(또는 모든 입력)이 열려 있는가.
+# 명령이 없거나 권한이 없어 아무 줄도 못 읽으면 "확인 못 함"
+# iptables 읽기는 이 한 곳(-S로 읽기만). 아래 두 판정 함수가 쓴다
+fw_ipt() { ${IPTABLES:-iptables} -S 2>/dev/null; }
+fw_wlan0() {
+  _fwo=$(fw_ipt | $BB awk '
+    { n++ }
+    $1 == "-N" && $2 == "WL_WLAN0_IN" { ch = 1 }
+    $1 == "-A" && $2 == "WL_WLAN0_IN" && / -j ACCEPT/ {
+      if ($0 ~ /(^|[ ,:])7000([ ,:]|$)/) p = 1
+      else if ($0 !~ / --dport| --sport| --dports| --sports| -p /) p = 1 }
+    END { if (n == 0) print "x"; else print (ch ? "y" : "n") (p ? "y" : "n") }' 2>/dev/null)
+  case "$_fwo" in
+    yy) echo "순정 체인(WL_WLAN0_IN) 예, 카플레이 포트(7000) 열림 예" ;;
+    yn) echo "순정 체인(WL_WLAN0_IN) 예, 카플레이 포트(7000) 열림 아니요(무선 카플레이를 막을 수 있음)" ;;
+    n?) echo "순정 체인(WL_WLAN0_IN) 아니요" ;;
+    *) echo "확인 못 함" ;;
+  esac
+}
+# 정식 F6(beta3-reports 11장): 순정 방화벽이 무선 안드로이드 오토 포트(40515, 순정 GPM이 휴대폰에 알리는 TCP 포트)를 막는가.
+# 순정 체인 WL_WLAN0_IN에 40515(또는 포트 없는 모두 허용)가 열려 있는가, 무선 모드 2.4.9의 HMG-API 규칙(HMGAPI_IN, aa_firewall)이 들어갔는가.
+# 예/아니요만 낸다(규칙 줄·주소는 남기지 않음)
+fw_aa() {
+  _fwa=$(fw_ipt | $BB awk '
+    { n++ }
+    $1 == "-N" && $2 == "WL_WLAN0_IN" { ch = 1 }
+    # 정식 2차 리뷰 L6: 상태 조건(--state·--ctstate, 예: ESTABLISHED만)이 붙은 줄은 새 연결을 열지 않으므로 40515 열림으로 세지 않는다
+    $1 == "-A" && $2 == "WL_WLAN0_IN" && / -j ACCEPT/ && $0 !~ / --(ct)?state / {
+      if ($0 ~ /(^|[ ,:])40515([ ,:]|$)/) p = 1
+      else if ($0 !~ / --dport| --sport| --dports| --sports| -p /) p = 1 }
+    $1 == "-A" && $2 == "HMGAPI_IN" && / -j ACCEPT/ && $0 ~ /--dport 40515( |$)/ { h = 1 }
+    END { if (n == 0) print "x"; else print (ch ? "y" : "n") (p ? "y" : "n") (h ? "y" : "n") }' 2>/dev/null)
+  case "$_fwa" in
+    yy?) echo "순정 체인 예, 순정이 40515를 열어 둠" ;;
+    yny) echo "순정 체인 예, 순정은 40515를 막음, 무선 모드 규칙 있음(순정 AP 주소만)" ;;
+    ynn) echo "순정 체인 예, 40515 막힘(무선 안드로이드 오토를 막을 수 있음)" ;;
+    n??) echo "순정 체인 아니요" ;;
+    *) echo "확인 못 함" ;;
+  esac
+}
 dn_safe() { $BB awk '{ gsub(/[^A-Za-z0-9 ._:\/()+=,#-]/, ""); print substr($0, 1, 80) }' 2>/dev/null; }
 # 16진 4자리만 받는다(USB ID). 아니면 빈 값
 dn_hex4() { case "$1" in [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) echo "$1" ;; esac; }
@@ -368,6 +440,148 @@ dn_id_note() {
 dn_bb_has() {
   $BB 2>&1 | $BB awk -v w="$1" '{ n = split($0, a, /[ ,\t]+/); for (i = 1; i <= n; i++) if (a[i] == w) f = 1 } END { if (NR == 0) print "확인 안 됨"; else if (f) print "예"; else print "아니요" }' 2>/dev/null
 }
+# 베타 2(니로 시험판): 동글 뽑기 기록(서비스가 $BK/dongle.pulls에 남김, dongle.md 4-22). 최근 10회, 숫자·낱말만.
+# 결과: 다음 부팅 판정(end 줄) — 뽑기 직후 재부팅 의심 / 견딤 / 붙은 채 끝남(판단 못 함), 이번 부팅이면 20초 기록으로 살아 있음·기록 중
+dg_pull_report() {
+  echo "- 동글 뽑기 기록(최근 10회, 붙은 채 뽑기 시험):"
+  if [ ! -s $DG_PULLF ]; then echo "  - 없음"; return 0; fi
+  _dgpcb=; read _dgpcb < ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null
+  $BB awk -v cb="$_dgpcb" '
+    function num(s) { return (s ~ /^-?[0-9]+$/) ? s : "?" }
+    function yn(s) { return s == "y" ? "예" : s == "n" ? "아니요" : "?" }
+    function word(s) { return (s ~ /^[a-z]+$/) ? s : "?" }
+    function val(k,   i) { for (i = 4; i <= NF; i++) if (index($i, k "=") == 1) return substr($i, length(k) + 2); return "" }
+    $3 == "pull" { n++; k = $1 " " $2; idx[k] = n; cur[n] = ($1 == cb); up[n] = num(val("up")); ap[n] = val("ap"); cp[n] = num(val("cp")); sa[n] = num(val("snap_age")); ha[n] = num(val("hapd_ago")); op[n] = word(val("wlan0")); next }
+    { k = $1 " " $2; if (!(k in idx)) { if ($3 == "end" && $4 == "att_end") attend = 1; next }; m = idx[k] }
+    $3 == "ok20" { ok[m] = 1; at[m] = num(val("attached")); dm[m] = num(val("done_ms")); ng[m] = val("ndev"); ul[m] = val("unload"); pa[m] = num(val("probe_ago")); ao[m] = num(val("aoa")); next }
+    $3 == "back" { bk[m] = num(val("up")); next }
+    $3 == "other" { ot[m] = 1; next }
+    $3 == "back10" { br[m] = num(val("probe_ret")); bs[m] = num(val("probe_step")); bw[m] = val("wlan0"); next }
+    $3 == "end" { en[m] = $4; if ($4 == "att_end") attend = 1; next }
+    END {
+      if (n == 0) { print "  - 없음"; exit }
+      s = n > 10 ? n - 9 : 1
+      for (i = s; i <= n; i++) {
+        if (en[i] == "reboot") r = "뽑기 직후 재부팅 의심(3초 안에 기록 끊김)"
+        else if (en[i] == "survived") r = "견딤(뽑은 뒤 60초 넘게 기록 이어짐)"
+        else if (en[i] == "cut") r = "판단 못 함(뽑은 뒤 4~59초에 기록 끊김)"
+        else if (en[i] == "watcher_end") r = "판단 못 함(감시가 먼저 끝남)"
+        else if (ok[i]) r = "살아 있음(20초)"
+        else if (cur[i]) r = "기록 중"
+        else r = "판단 못 함(20초 기록 없음)"
+        print "  - " i ". " (cur[i] ? "이번" : "지난") " 부팅: uptime " up[i] "초, AP " yn(ap[i]) "·카플레이 " cp[i] "(" sa[i] "초 전 점검), AP 시작 뒤 " ha[i] "초, wlan0 " op[i] \
+          ", attached " (ok[i] ? at[i] : "-") ", done " (ok[i] ? dm[i] : "-") " ms, 중간 표시 ndev " (ok[i] ? yn(ng[i]) : "-") "·unload " (ok[i] ? yn(ul[i]) : "-") \
+          ", 프로브 뒤 " (ok[i] ? pa[i] : "-") "초, 순정 AOA 줄 " (ok[i] ? ao[i] : "-") ", 다시 꽂음 " (bk[i] != "" ? "uptime " bk[i] "초" : (ot[i] ? "다른 장치를 꽂음" : "안 함")) \
+          "(probe ret " (br[i] != "" ? br[i] : "-") " step " (bs[i] != "" ? bs[i] : "-") ", wlan0 다시 " (bw[i] != "" ? yn(bw[i]) : "-") "), " r }
+      if (attend) print "  - 지난 부팅이 동글이 붙은 채 끝남: 판단 못 함(시동을 끈 것일 수 있음)" }' $DG_PULLF 2>/dev/null
+}
+# 니로 시험판 4(설계 변경): 순정 Wi-Fi 저장값(지금·원래)·드라이버 상태·순정 HAL이 bcmdhd를 올린 logcat 줄 시각. 숫자·낱말만
+dg_wifi_report() {
+  _dwr1=$(dg_sget wifi_on); _dwr2=$(dg_sget wifi_scan_always_enabled); _dwr3=$(apon_get)
+  _dwo1=-; [ -f $DG_WIFI_ORIG ] && read _dwo1 < $DG_WIFI_ORIG 2>/dev/null
+  _dwo2=-; [ -f $DG_SCAN_ORIG ] && read _dwo2 < $DG_SCAN_ORIG 2>/dev/null
+  _dwo3=-; [ -f $APON_ORIG ] && read _dwo3 < $APON_ORIG 2>/dev/null
+  _dwds=$(getprop wlan.driver.status 2>/dev/null | $BB awk '{ gsub(/[^a-z0-9_]/, ""); print; exit }')
+  _dwbm=아니요; $BB grep -q "^$DG_BUILTIN_MOD " /proc/modules 2>/dev/null && _dwbm=예
+  # WifiHW 등 순정 HAL의 insmod 줄 시각(이번 부팅 logcat, 끝 3개)
+  _dwins=$(lcd | $BB awk '/WifiHW|wifi_load_driver/ && /insmod/ { t[++n] = $1 " " $2 } END { s = n > 3 ? n - 3 : 0; for (i = s + 1; i <= n; i++) o = o (o == "" ? "" : ", ") t[i]; print (n ? o : "없음") }' 2>/dev/null)
+  echo "- 순정 Wi-Fi 저장값(시험판 4, 동글 사용 중 0으로 둠): wifi_on ${_dwr1:-?}(원래 ${_dwo1:--}), 스캔 항상 ${_dwr2:-?}(원래 ${_dwo2:--}), wifi_ap_on ${_dwr3:-?}(원래 ${_dwo3:--}), wlan.driver.status ${_dwds:-없음}, bcmdhd 올라옴 $_dwbm, 순정 HAL insmod 줄 ${_dwins:-확인 못 함}"
+}
+# 니로 시험판 4: 동글 단계 기록(서비스가 $BK/dongle.steps·.prev, dmesg 사본 dongle.kmsg·.prev, 판정 dongle.stepv에 남김).
+# 부팅 id는 싣지 않는다(이번·지난 부팅으로만 적음). 줄은 숫자·우리 낱말·가린 dmesg뿐
+dg_step_report() {
+  echo "- 동글 단계 기록(시험판 4, 내장 Wi-Fi 내리기 직전 ~ 동글이 붙은 뒤 ${DG_STEP_AFTER:-120}초, 1초마다):"
+  _dgsr_cb=; read _dgsr_cb < ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null
+  if [ -s $DG_STEPV ]; then
+    $BB awk '{ v = ($2 == "cut") ? "기록 중에 끊김(그때 재부팅·전원 꺼짐)" : "끝 표시까지 남음"; $1 = ""; $2 = ""; sub(/^ +/, ""); print "  - 지난 판정: " v ", " $0; exit }' $DG_STEPV 2>/dev/null
+  fi
+  _dgsr_n=0
+  # 시험판 6(F9): 네 세대(.prev3 = 세 번째 앞 기록)
+  for _dgsr_f in $DG_STEPF.prev3 $DG_STEPF.prev2 $DG_STEPF.prev $DG_STEPF; do
+    [ -s $_dgsr_f ] || continue
+    _dgsr_n=$((_dgsr_n + 1))
+    _dgsr_old=0; [ "$_dgsr_f" = "$DG_STEPF.prev" ] && _dgsr_old=1; [ "$_dgsr_f" = "$DG_STEPF.prev2" ] && _dgsr_old=2; [ "$_dgsr_f" = "$DG_STEPF.prev3" ] && _dgsr_old=3
+    $BB awk -v cb="$_dgsr_cb" -v old=$_dgsr_old '
+      NR == 1 { w = old == 3 ? "세 번째 앞 기록" : old == 2 ? "두 번째 앞 기록" : old ? "그 앞 기록" : ($1 == "B" && $2 == cb) ? "이번 부팅 기록" : "최근 기록(지난 부팅)"; next }
+      $2 == "M" { m[++nm] = $0 } { l[++nl] = $0 }
+      END {
+        print "  - " w " 표시 줄(uptime초 M 단계):"
+        s = nm > 25 ? nm - 25 : 0; for (i = s + 1; i <= nm; i++) print "    " m[i]
+        print "  - " w " 끝 12줄(uptime초 S 단계 m순정모듈 d동글모듈 w wlan0 u동글USB s붙음 h hostapd p wpa f설치확인):"
+        s = nl > 12 ? nl - 12 : 0; for (i = s + 1; i <= nl; i++) print "    " l[i] }' $_dgsr_f 2>/dev/null
+  done
+  [ $_dgsr_n = 0 ] && echo "  - 없음"
+  # 시험판 5: 부팅 기록(부팅 번호별 early·start·pre-ins 줄, 최근 40줄 중 끝 30줄). 숫자·낱말만
+  if [ -s $DG_BOOT0F ]; then
+    echo "  - 부팅 기록(#부팅 번호 uptime 때 bcmdhd·88x2bu·wlan0·속성, 부팅 뒤에는 순정 저장값·드라이버 상태·순정 HAL insmod 수와 끝 시각):"
+    $BB awk '{ a[NR] = $0 } END { s = NR > 30 ? NR - 30 : 0; for (i = s + 1; i <= NR; i++) print "    " a[i] }' $DG_BOOT0F 2>/dev/null
+  fi
+  # 베타 3(B3-1·B3-9): 시동 → insmod → 붙음 → AP → 카플레이 시각(부팅 뒤 초, 최근 3부팅)과 가드·버스·순정 AOA·vbus 진단(비공개 파일만)
+  if [ -s $DG_TLF ]; then
+    echo "  - 시각 기록(#부팅 번호, 부팅 뒤 초: start 서비스 시작·ins 드라이버 올림·probe 동글 붙음·ap 핫스팟·cp 카플레이, way 길):"
+    $BB awk '{ a[NR] = $0 } END { s = NR > 3 ? NR - 3 : 0; for (i = s + 1; i <= NR; i++) print "    " a[i] }' $DG_TLF 2>/dev/null
+  fi
+  # 베타 3(B3-9b): 다시 붙이기 사다리 기록(단계별 ok·no·skip·err, 최근 20번)
+  if [ -s $BK/dongle.ladlog ]; then
+    echo "  - 다시 붙이기 기록(1 authorized·2 unbind/bind·3 USB 리셋·4 포트 전원, 최근 20번):"
+    $BB awk '{ print "    " $0 }' $BK/dongle.ladlog 2>/dev/null
+  fi
+  # 베타 3(B3-9 기록 3): 서비스 시작 때 복사한 커널 USB 줄(버스 등록·장치 번호·떼어짐·kp-protect 프로브만, 비공개)
+  if [ -s $DG_KUSBF ]; then
+    echo "  - 커널 USB 줄(서비스 시작 때, 끝 40줄):"
+    $BB awk '{ print "    " $0 }' $DG_KUSBF 2>/dev/null
+  fi
+  for _dgsr_f in $DG_KMSGF.prev3 $DG_KMSGF.prev2 $DG_KMSGF.prev $DG_KMSGF; do
+    [ -s $_dgsr_f ] || continue
+    echo "  - 커널 줄 사본 끝 30줄(${_dgsr_f##*/}, 드라이버·USB·Wi-Fi·오류 줄만, MAC·번호 가림):"
+    $BB awk '{ a[NR] = $0 } END { s = NR > 30 ? NR - 30 : 0; for (i = s + 1; i <= NR; i++) print "    " a[i] }' $_dgsr_f 2>/dev/null
+  done
+  return 0
+}
+# 베타 2(니로 시험판): 동글별 기록(서비스가 $BK/dongle.models에 남김). 모델 이름·판정 결과·무선 카플레이 연결만, 최근 부팅
+dg_model_report() {
+  echo "- 동글별 기록(동글이 붙은 최근 4부팅):"
+  if [ ! -s $DG_MODELF ]; then echo "  - 없음"; return 0; fi
+  _dgmcb=; read _dgmcb < ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null
+  $BB awk -v cb="$_dgmcb" '
+    function mname(m) { return m == "A3000MINI" ? "ipTIME A3000MINI" : m == "NX-AC1300" ? "NEXI NX-AC1300" : m == "ArcherT3U" ? "TP-Link Archer T3U" : "목록 밖 동글" }
+    # 배포판(소유자 지시 11-23): 판단 결과만(지원 동글 예·아니요)
+    function otext(o) { return (o == "ok" || o == "id" || o == "lax") ? "예" : o == "no" ? "아니요" : o == "unk" ? "확인 못 함" : "?" }
+    function v(k,   i) { for (i = 3; i <= NF; i++) if (index($i, k "=") == 1) return substr($i, length(k) + 2); return "" }
+    { if (!($1 in bseen)) { bseen[$1] = ++nb; border[nb] = $1 } }
+    $2 == "seen" { k = $1 SUBSEP v("model"); if (!(k in oui)) { nk++; key[nk] = k; kb[nk] = $1; km[nk] = v("model") } oui[k] = v("oui") }
+    $2 == "conn" { conn[$1 SUBSEP v("model")] = 1 }
+    END {
+      # 시험판 5(메인 11-23, 운행마다 다른 동글): 기록이 있는 최근 4부팅. 이번 부팅이 아니면 "N번째 앞 부팅"(1이 바로 앞)
+      for (i = 1; i <= nk; i++) {
+        for (j = 1; j <= nb; j++) if (border[j] == kb[i]) bi = j
+        if (nb - bi >= 4) continue
+        lab = (kb[i] == cb) ? "이번 부팅" : ((nb - bi + (border[nb] == cb ? 0 : 1)) "번째 앞 부팅")
+        print "  - " lab ": " mname(km[i]) ", 지원 동글 " otext(oui[key[i]]) ", 무선 카플레이 연결 " (conn[key[i]] ? "예" : "아니요") }
+    }' $DG_MODELF 2>/dev/null
+}
+# 배포판(소유자 지시 11-23): 공개 리포트(1-report.md)에는 동글의 판단 결과만 싣는다.
+# 자세한 동글 기록은 dongle_info(비공개 파일, 베타 3부터 $PDIR/5-dongle-private.txt)에만 둔다
+dongle_pub() {
+  echo "## USB Wi-Fi 동글"
+  if [ ! -f $DG_ON ] && [ ! -f $BK/dongle.used ]; then echo "- 동글 사용: 꺼짐"; return 0; fi
+  _dps=기록없음; [ -f $W/dongle.state ] && { read _dps1 _dps2 < $W/dongle.state; _dps=$(echo "$_dps1" | dn_safe); }
+  _dpo=; _dpo3=; [ -f $DG_OUIF ] && read _dpo _dpox _dpo3 < $DG_OUIF 2>/dev/null; [ "$_dpo3" = "$(dg_kv_bid)" ] || _dpo=
+  echo "- 동글 사용: $([ -f $DG_ON ] && echo 켜짐 || echo 꺼짐), 이번 부팅 상태 ${_dps:-기록없음}, 지원 동글 $(dg_oui_text "$_dpo")"
+  dg_model_report
+  echo "- 동글 자세한 기록은 비공개 파일(KoreaProjection-private)에 있습니다. 공개 이슈에 올리지 말고 요청이 있을 때만 따로 보내 주세요."
+  # 베타 3(B3-11·B2-8): 마지막 동글 상태(동글을 빼고 제보를 만들어도 직전 상태가 남음)
+  if [ -s $DG_LASTF ]; then
+    $BB awk '{ for (i = 1; i <= NF; i++) { split($i, kv, "="); v[kv[1]] = kv[2] }
+      s = (v["sup"] == "yes") ? "예" : (v["sup"] == "no") ? "아니요" : "확인 못 함"; c = (v["conn"] == "yes") ? "예" : "아니요"
+      print "- 마지막 동글 상태: " v["model"] ", 지원 동글 " s ", 무선 연결 " c " (" v["t"] ")" }' $DG_LASTF 2>/dev/null
+  fi
+  # 베타 3(B3-9b): 다시 붙이기 사다리의 마지막 결과(몇 단계에서 됐는지만, 방법·경로는 비공개 파일)
+  if [ -s $BK/dongle.ladres ]; then
+    _dlp1=; _dlp2=; read _dlp1 _dlp2 < $BK/dongle.ladres 2>/dev/null
+    case "$_dlp2" in 0) echo "- 동글 다시 붙이기(마지막 시도): 안 됨" ;; [1-4]) echo "- 동글 다시 붙이기(마지막 시도): ${_dlp2}단계에서 됨" ;; esac
+  fi
+}
 dongle_info() {
   # 묶음 J 리뷰(낮음 7): 제목을 "조사"로(지원을 약속하는 말로 읽히지 않게)
   echo "## 동글 조사 정보 (1.8.0 USB Wi-Fi 동글 조사용, 읽기만)"
@@ -379,6 +593,57 @@ dongle_info() {
     _kb=$($BB awk 'NR == 1 { b = $0; if (sub(/.*\) #/, "#", b)) print b; exit }' $KPROC/version 2>/dev/null | dn_safe)
     echo "- 커널: ${_kr:-없음} / gcc ${_kg:-없음} / 빌드 ${_kb:-없음}"
   else echo "- 커널: 확인 안 됨"; fi
+  # 1.8.0 DG-4: 동글 드라이버를 고르는 근거 한 줄(칩·커널 빌드 시각·순정 bcmdhd md5)과 이번 결과. 제보로 칩별 드라이버가 맞는지 확인한다
+  _dgc=$(getprop ro.board.platform 2>/dev/null | dn_safe)
+  _dgk=; for _d in $KMODDIRS; do [ -f $_d/bcmdhd.ko ] && { _dgk=$_d/bcmdhd.ko; break; }; done
+  _dgm=; [ -n "$_dgk" ] && { set -- $($BB md5sum < $_dgk 2>/dev/null); _dgm=$1; }
+  case "$_dgm" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) _dgm= ;; esac
+  _dgs=없음; [ -f $W/dongle.state ] && { read _dgs1 _dgs2 < $W/dongle.state; _dgs=$(echo "$_dgs1 $_dgs2" | dn_safe); }
+  _dgb=없음; [ -f $DG_BLOCK ] && { read _dgb1 _dgb2 _dgb3 < $DG_BLOCK; _dgb="있음($(echo "$_dgb2 $_dgb3" | dn_safe))"; }
+  # 베타 2: 이 부팅에 동글을 wlan0으로 쓰려고 순정 Wi-Fi 드라이버를 내렸는가(이번 부팅 기록만)
+  _dgrby=아니요; dg_rm_now && { _dgrby=예; _dgrx2=; read _dgrx1 _dgrx2 < $DG_RMF 2>/dev/null; [ "$_dgrx2" = clean ] && _dgrby="아니요(처음부터 없음, 동글 길 표시만)"; }
+  echo "- 동글 드라이버(DG-4): 칩 ${_dgc:-없음}, 커널 빌드 ${_kb:-확인 안 됨}, 순정 bcmdhd md5 ${_dgm:-없음}, 상태 ${_dgs:-없음}, 막힘 기록 $_dgb, 이 부팅 순정 드라이버 내림 $_dgrby, 내린 뒤 다시 올라옴 $([ -f $W/dongle.bcmback ] && echo 예 || echo 아니요)"
+  # 베타 2: 동글 판정(DG-3, 결과 낱말만)과 동글 wlan0 위 우리 AP(DG-5)가 이어서 꺼진 횟수·이유 분류
+  _dgo=; [ -f $DG_OUIF ] && read _dgo _dgox _dgoy < $DG_OUIF 2>/dev/null
+  _dgnp=없음; if [ -f $W/dongle.noap ]; then _dgn1=; _dgn2=; _dgn3=; read _dgn1 _dgn2 _dgn3 < $W/dongle.noap 2>/dev/null; case "$_dgn2" in ''|*[!0-9]*) _dgn2=? ;; esac
+    # 이유는 서비스가 정한 분류 낱말만 그대로 둔다(그 밖의 글자는 "모름")
+    case "$_dgn3" in "채널 149를 쓸 수 없음(나라 규칙)"|"40MHz 설정을 받지 않음"|"드라이버가 AP 모드를 받지 않음"|"인터페이스를 시작하지 못함") ;; *) _dgn3=모름 ;; esac
+    _dgnp="이어서 꺼짐 ${_dgn2}번(이유 $_dgn3)"; fi
+  # 배포판: 이 칸(dongle_info)은 비공개 파일에만 들어간다. 판정 결과를 그대로 남긴다
+  _dgox=$(echo "${_dgox:-}" | dn_safe)
+  # 동글 판정(DG-3) 비공개 기록. 꼴이 맞는 값만 옮긴다
+  _dgov=; _dgov1=; [ -f ${DG_OUIVF:-$BK/dongle.ouiv} ] && read _dgov1 _dgov2 _dgov < ${DG_OUIVF:-$BK/dongle.ouiv} 2>/dev/null
+  case "$_dgov" in [0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]) ;; *) _dgov= ;; esac
+  [ -n "$_dgov" ] && { [ "$_dgov1" = "$(dg_kv_bid)" ] && _dgov="$_dgov(이번 부팅)" || _dgov="$_dgov(지난 부팅)"; }
+  echo "- 동글 확인(비공개): 결과 ${_dgo:-기록없음}(ok 앞자리 맞음·no 아님·id 번호로·lax 기록만 받음·unk 못 읽음), USB 번호 ${_dgox:-없음}, 동글 MAC 앞 3바이트 ${_dgov:-기록없음}, 막기 $([ "$DG_OUI_ENFORCE" = 1 ] && echo 켜짐 || echo "꺼짐(기록만)"); 동글 AP(DG-5): $_dgnp"
+  # 베타 2 AOA 가드: 켬/꺼짐, 동글이 막힌 자리에 붙었는가, 지금 남은 우리 빈 폴더 수(번호·이름 없이 숫자만)
+  _dga=; _dgas=; [ -f $W/aoa.state ] && read _dga1 _dga _dgas < $W/aoa.state 2>/dev/null
+  case "$_dga" in blocked) _dga="동글 자리 막힘" ;; open) _dga="동글 자리에 노드가 있음(막지 못함)" ;; none) _dga="동글 자리 없음" ;; *) _dga="동글 자리 기록 없음" ;; esac
+  case "$_dgas" in yes) _dgas=예 ;; no) _dgas=아니요 ;; *) _dgas="확인 못 함" ;; esac
+  _dgan=0; [ -f $DG_AOAF ] && _dgan=$($BB awk 'NR > 1 { n++ } END { print n + 0 }' $DG_AOAF 2>/dev/null)
+  # 순정 AOA 시도 줄 수(logcat, 수만)
+  # 시험판 6(F7): 순정 AA의 USB 길 시작·결과 줄도 센다(hotspot.sh dg_aoa_count와 같은 꼴)
+  _dgaa=$(lcd | $BB awk '/startAccessory|locateGoogleDevice|UsbAccesory|UsbTransport : init|mUsbTransport\.init\(\) ret/ { n++ } END { print n + 0 }' 2>/dev/null)
+  # 베타 2(R7, 여섯 번째 차): 가드 전 순정 AOA 줄은 서비스 시작 때 센 값($W/dg.eaoa, 이번 부팅)을 따로 보인다. 제보 때 logcat 버퍼는
+  # 디버그 로그로 돌아 부팅 앞부분이 지워졌을 수 있다(17줄 → 0)
+  _dgae=기록없음; _dgae1=; _dgae2=; [ -f $W/dg.eaoa ] && read _dgae1 _dgae2 < $W/dg.eaoa 2>/dev/null
+  [ "$_dgae1" = "$(dg_kv_bid)" ] && case "$_dgae2" in ''|*[!0-9]*) ;; *) _dgae=$_dgae2 ;; esac
+  _dgee=기록없음; _dgee1=; _dgee2=; [ -f $W/dg.early ] && read _dgee1 _dgee2 _dgee3 < $W/dg.early 2>/dev/null
+  [ "$_dgee1" = "$(dg_kv_bid)" ] && case "$_dgee2" in blocked) _dgee="동글 자리 막힘(가드가 먼저)" ;; swapped) _dgee="가드 전 노드를 빈 폴더로 바꿈" ;; keep) _dgee="가드 전 노드를 못 바꿈" ;; none) _dgee="가드가 먼저 걸림(그때 동글 없음)" ;; esac
+  echo "- AOA 가드: $([ -f $BK/dongle.noguard ] && echo "꺼짐(noguard)" || echo 켬), $_dga, 동글 버스와 같음 $_dgas, 막은 빈 폴더 ${_dgan:-0}개"
+  echo "  - 이번 부팅 가드 시작: $_dgee, 서비스 시작 때 센 순정 AOA 줄 $_dgae, 지금 logcat 버퍼의 순정 AOA 줄 ${_dgaa:-?}"
+  dg_pull_report
+  dg_model_report
+  dg_step_report
+  dg_wifi_report
+  # 1.8.0 SC-5: 토글과 자동 판단 근거 한 줄
+  _dgw0=; [ -f $DG_AUTO ] && read _dgw1 _dgw0 _dgw2 < $DG_AUTO 2>/dev/null
+  _dgt=$( { if [ -f $DG_ON ]; then echo "t=on"; else echo "t=off"; fi; dg_toggle_kv; echo "raw=$_dgw0"; } | $BB awk -F= '{ v[$1] = $2 } END { t = v["t"] == "on" ? "켜짐" : "꺼짐"; s = v["dongle_set"]; w = v["dongle_why"]; r = v["raw"]
+    if (s == "on" || s == "off") print t "(차주 선택)"
+    else if (w == "nochip" || w == "builtin_bad") print t "(자동, 근거 " (r == "nopart" ? "부품 없음" : r == "nochip" ? "칩이 켜지지 않음" : r == "nowlan" ? "여러 부팅 wlan0 없음" : "모름") ")"
+    else if (w == "nodongle") print t "(자동 대기: 근거는 있으나 허용 동글·드라이버 없음)"
+    else print t "(기본값, 내장 Wi-Fi 사용)" }')
+  echo "- 동글 토글(SC-5): ${_dgt:-확인 안 됨}"
   # ② 올라온 모듈(이름만)과 Wi-Fi 모듈의 판 정보
   # 묶음 I: 80자에서 잘리지 않게 이름을 10개씩 한 줄로, 20줄(200개)까지(니로 리포트가 "vpu_d6_"에서 끊겼음). 이름 글자는 영문·숫자·_-만, 40자까지
   if [ -r $KPROC/modules ]; then
@@ -660,6 +925,8 @@ perf_report() {
   _pl=; { read -r _pl < $LOADAVG; } 2>/dev/null; set -- $_pl
   _pu=$(up_s)
   echo "- 부하 평균(1·5·15분): ${1:--} ${2:--} ${3:--}, 부팅 뒤 ${_pu:--}초"
+  # 1.8.0 PF-4: 이 제보를 만들기 시작한 시각(perf.log에서 그 뒤의 부하는 제보 만들기 몫)
+  [ -n "$RSTART_T" ] && echo "- 제보 만들기 시작: $RSTART_T (낮은 우선순위로 만듦, logcat은 한 번만 읽음)"
   echo "- 메모리(MB): $($BB awk '$1 == "MemTotal:" { t = $2 } $1 == "MemFree:" { f = $2 } $1 == "Buffers:" { b = $2 } $1 == "Cached:" { c = $2 } $1 == "SwapTotal:" { st = $2 } $1 == "SwapFree:" { sf = $2 }
     END { if (t == "") { print "읽지 못함"; exit }
       print sprintf("전체 %d, 비어 있음 %d, 캐시 %d, 스왑 %d 중 %d 비어 있음", t / 1024, f / 1024, (b + c) / 1024, st / 1024, sf / 1024) }' $MEMINFO 2>/dev/null || echo 읽지 못함)"
@@ -678,7 +945,10 @@ perf_report() {
     else _dk="읽지 못함"; fi
   fi
   echo "- 우리 dnsmasq의 표준입력: $_dk"
-  echo "- 디버그 로그: 켜기 파일 $(yn [ -f $W/debug ]), 기록 중 $(yn [ -f $W/log.pid ]) (기록 중이면 logcat을 거르는 줄 6개가 쉬지 않고 돕니다)"
+  echo "- 디버그 로그: 켜기 파일 $(yn [ -f $W/debug ]), 기록 중 $(yn [ -f $W/log.pid ]) (기록 중이면 logcat → awk → uniq 프로세스 3개가 쉬지 않고 돕니다), 자동 켜짐: $(dbg_auto_state)"
+  aa_stream_line
+  # 베타 3(B3-3): 마지막으로 켠 이유와 시각(코드·숫자만). 자세한 8줄은 비공개 파일
+  [ -s $BK/debug.why ] && $BB awk '{ l = $0 } END { if (!NR) exit; split(l, f, " "); t = f[4]; if (t == "" || t == "-") t = "시각 모름"; print "- 디버그 로그 마지막 자동 켜짐 이유: " f[3] " (" t ", 부팅 뒤 " f[2] "초)" }' $BK/debug.why 2>/dev/null
   # CPU 표본: /proc/stat 첫 줄과 프로세스별 CPU를 두 번 읽어 그 사이의 변화량을 본다
   _k1=; _k2=
   # 리뷰 L5: 지난 제보 만들기가 표본 사이에 끝났으면 남았을 수 있는 임시 파일을 먼저 지운다
@@ -716,7 +986,8 @@ perf_report() {
         el[g] += (dt > 0 ? dt : 30)
         if (v["free"] != "-" && (fm[g] == "" || v["free"] + 0 < fm[g] + 0)) fm[g] = v["free"]
         if (v["load"] != "-" && v["load"] + 0 > lm[g] + 0) lm[g] = v["load"]
-        for (q = 1; q <= 7; q++) { w = nk[q]; if (v[w] != "-") sum[g " " w] += v[w] } }
+        # 정식(H-1): Wi-Fi 칸(rxe·rxd·txe·txd)은 칸 수가 맞은 서비스 실행(첫 줄 wn=16)의 줄만 센다(UDP·TCP는 그대로)
+        for (q = 1; q <= 7; q++) { w = nk[q]; if (v[w] != "-" && (q > 4 || wok)) sum[g " " w] += v[w] } }
       function out(g, t) { if (n[g] == 0) { print "  - " t ": 기록 없음"; return }
         print sprintf("  - %s(%d줄, 약 %d분): 내비 CPU 평균 %s%%·최대 %s%%, 입출력 대기 최대 %s%%, 부하 최대 %s, 점검 한 번 평균 %s초·최대 %s초, 우리 서비스 셸과 점검 명령의 CPU 평균 %s%%(코어 하나를 100%%로, 계속 도는 hostapd·디버그 로그 줄은 빼고), 빈 메모리 최소 %s MB", t, n[g], el[g] / 60,
           (cn[g] ? int(cs[g] / cn[g]) : "-"), (cn[g] ? cm[g] + 0 : "-"), im[g] + 0, lm[g] + 0,
@@ -724,12 +995,14 @@ perf_report() {
           (sd[g] > 0 ? sprintf("%.1f", ss[g] / sd[g]) : "-"), (fm[g] == "" ? "-" : int(fm[g] / 1024)))
         print sprintf("    Wi-Fi 받기 오류 %d·버림 %d, 보내기 오류 %d·버림 %d, UDP 받기 오류 %d·버퍼 넘침 %d, TCP 재전송 %d",
           sum[g " " "rxe"], sum[g " " "rxd"], sum[g " " "txe"], sum[g " " "txd"], sum[g " " "udpe"], sum[g " " "udpb"], sum[g " " "retr"]) }
-      BEGIN { split("rxe rxd txe txd udpe udpb retr", nk, " "); nq = split("up load cpu io svc tick free cp dbg rxe rxd txe txd udpe udpb retr", ak, " ") }
+      BEGIN { split("rxe rxd txe txd udpe udpb retr", nk, " "); nq = split("up load cpu io svc tick free cp dbg rxe rxd txe txd udpe udpb retr wn", ak, " "); wok = 1 }
       /^#/ { pu = ""; next }
       { # 리뷰 L4: 줄마다 쓰는 키를 "-"로 되돌린 뒤 읽는다(이 busybox awk에서 써 보지 않은 delete를 피함)
         for (q = 1; q <= nq; q++) v[ak[q]] = "-"
         for (i = 2; i <= NF; i++) { j = index($i, "="); if (j > 0) v[substr($i, 1, j - 1)] = substr($i, j + 1) }
         if (index($0, " cpu=") == 0 || index($0, " tick=") == 0) next
+        # 서비스 시작 뒤 첫 줄에만 wn이 있다: 그 값으로 이 실행의 Wi-Fi 칸을 믿을지 정한다(wn이 없던 예전 기록은 그대로 셈)
+        if (v["wn"] != "-") wok = (v["wn"] == "16")
         # 지난 줄과의 간격(초): 서비스 CPU를 시간으로 나눌 때 쓴다(서비스가 다시 시작했거나 간격이 이상하면 쓰지 않음)
         dt = 0; if (pu != "" && v["up"] != "-" && v["up"] - pu > 0 && v["up"] - pu < 300) dt = v["up"] - pu
         pu = (v["up"] == "-" ? "" : v["up"])
@@ -753,7 +1026,7 @@ perf_report() {
       END { if (val["Udp:InDatagrams"] == "") { print "읽지 못함"; exit }
         print "UDP 받음 " val["Udp:InDatagrams"] "(오류 " val["Udp:InErrors"] "·버퍼 넘침 " val["Udp:RcvbufErrors"] + 0 "), TCP 보냄 " val["Tcp:OutSegs"] "(재전송 " val["Tcp:RetransSegs"] ")" }' $PROCNET/snmp 2>/dev/null || echo 읽지 못함)"
   # 소리·화면: 지금 logcat 버퍼에 남은 줄의 개수만(줄 내용은 넣지 않는다). 마지막 소리 설정은 형식 이름만(영문·숫자)
-  logcat -d -v time 2>/dev/null | $BB awk '
+  lcd | $BB awk '
     / [VDIWEF]\/TccCarPlay *\(/ {
       if (index($0, "glitches in the last minute") > 0) { g++; s = substr($0, index($0, "### ") + 4); gs += s + 0 }
       else if (index($0, "### Lost packets") > 0) lp++
@@ -791,6 +1064,11 @@ screen_info() {
 }
 report() {
   prod=$(getprop ro.build.product)
+  # 베타 3(B3-6, 소유자 결정 11-23 "변조된 이라고 하자"): 변조 검사에 걸린 버전이면 맨 위 첫 줄에 크게 알린다
+  if kp_tampered; then
+    echo "## ⚠ 변조된 버전입니다. 공식 GitHub에서 다운로드한 버전이 아닙니다."
+    echo
+  fi
   # 1.7.3(R-2): 설치 진행 중(이번 부팅 PROG state=run)에 만든 리포트는 첫 줄에 알린다. 그때는 Wi-Fi가 꺼져 있거나 wlan0이
   # 아직 없어 판정이 틀릴 수 있다(#114·#115). 앱은 설치 중에 버튼을 막지만, 서비스 백업 경로 등으로 만들어질 수 있다.
   if $BB grep -q '^state=run$' $PROG 2>/dev/null \
@@ -822,7 +1100,17 @@ report() {
   echo "- targetdir (NEMESIS models): $(getprop ro.mobis.targetdir)"
   echo "- onebin: $(getprop ro.mobis.onebindir)"
   screen_info
-  echo "- 이 패키지 버전: $(pver $APP/NEMESIS.data)"
+  # 베타 3(B3-8, 제보 분석 B2-7): 어느 빌드인지. 빌드 = 변조 검사 목록(bin/kp-files.md5)의 md5 앞 8자리(패키지 안에서 정해지는 값,
+  # NEMESIS.data를 뺀 모든 파일이 바뀌면 바뀜). zip 해시는 zip 안에서 알 수 없어 쓰지 않는다
+  echo "- 이 패키지 버전: $(pver $APP/NEMESIS.data) · 빌드 $(kp_build)"
+  # 베타 3(B3-13): 이 빌드의 공식 버전·목록 줄 수와 다르면 표시(막지 않음). 고친 사람이 목록까지 새로 만들어 변조 검사를 통과한 경우(#509)
+  kp_official_line
+  # 1.8.0 변조 검사: 리포트를 만들 때마다 패키지 파일을 목록(bin/kp-files.md5)과 다시 맞춰 본다(서비스 스크립트가 바뀌어 서비스 쪽 검사가
+  # 빠진 개조판도 여기서 드러나게). 다른 파일은 우리 패키지 안의 상대 경로만 적는다
+  if kp_verify; then echo "- 패키지 파일 확인: 목록과 같음 ($($BB awk 'END { print NR }' ${KPLIST:-$APP/bin/kp-files.md5})개)"
+  elif [ "$KP_BADN" = -1 ]; then echo "- 패키지 파일 확인: **목록 파일 없음** (변조된 패키지일 수 있음)"
+  else echo "- 패키지 파일 확인: **목록과 다른 파일 $KP_BADN개** (변조된 패키지일 수 있음):$KP_BADL"; fi
+  echo "- 서비스의 변조 검사(이번 시작): $(cat $W/kp.tamper 2>/dev/null || echo 기록 없음)"
   echo "- 설치 진행: $($BB awk -F= '$1 == "state" || $1 == "pct" || $1 == "stage" { printf "%s=%s  ", $1, $2 }' $PROG 2>/dev/null)"
   # 1.7.3(D-6): "확인된 차"는 공개 README 지원 표의 ✅(CARS_SEEN)로 본다
   if car_in "$prod" "$CARS_SEEN"; then echo "- 확인된 차: 예"
@@ -836,6 +1124,12 @@ report() {
   echo "- wireless.projection 설치: $(yn [ -d /data/nemesis/apps/wireless.projection ])"
   echo "- HMG-API 무선 모드: 설치 $(mod_state) / 켜짐 $(mod_on_state) / 무선 카플레이 설정(bridge) $(bridge_state)"
   echo "- 무선 모드 판: 차 $(mod_ver) / 패키지 $MOD_VER"
+  # 1.8.0 정식(P2): 우리가 설치·업데이트할 때 남긴 mod.json 기록과 지금이 같은가(기록만, 판정에는 쓰지 않음). 버전 숫자만
+  mod_sig_note; _msd=없음; [ -f $BK/mod.sig ] && _msd=같음
+  [ -f $BK/mod.sigdiff ] && _msd="다름($($BB awk '{ gsub(/[^0-9.]/, "", $1); gsub(/[^0-9.]/, "", $2); print $1 " → " $2; exit }' $BK/mod.sigdiff 2>/dev/null))"
+  echo "- 무선 모드 설치 기록과 비교: $_msd"
+  # 베타 3(B3-10): 작성자가 우리인지만(키 값은 비공개 파일)
+  case "$(mod_key)" in ours) echo "- 무선 모드 작성자: 우리" ;; other) echo "- 무선 모드 작성자: 다른 사람" ;; *) [ -f $HMGDATA/mods/$MOD_ID/mod.json ] && echo "- 무선 모드 작성자: 모름(키 기록 없음)" ;; esac
   _mh=$(modhooks_state)
   # 베타 2 #64: HMG-API 로그의 훅 줄은 마지막으로 기록이 남은 부팅 것이다(부팅 보호로 훅이 꺼진 부팅에는 새 줄이 없음).
   # 이번 부팅 zygote 커널 줄로 이번 부팅 것인지 붙인다
@@ -855,7 +1149,7 @@ report() {
   if mod_pending; then
     echo ""
     # 1.7.2(P-18): 할 일로 쓴다. 바꾸기는 부팅 2분 뒤(서비스가 다시 시작돼도 부팅 기준)에 돈다(#60 K3).
-    echo "**할 일: 내비를 재부팅하고 3분 기다린 뒤 한 번 더 재부팅해 주세요.** 그러면 무선 모드가 새 판($MOD_VER)으로 바뀌니, 리포트를 다시 만들어 주세요."
+    echo "**할 일: 재부팅하고 3분 기다린 뒤 한 번 더 재부팅해 주세요.** 그러면 무선 모드가 새 버전($MOD_VER)으로 바뀌니, 리포트를 다시 만들어 주세요."
     echo ""
   fi
   mod_foreign && echo "  - 이 모드는 한국 차용이 아닙니다(Korea Projection이 넣은 것 아님). HMG-API 앱에서 지우고 적용·재부팅하면 한국 차용 모드 설치를 시도합니다"
@@ -873,10 +1167,17 @@ report() {
   for p in persist.ium.support persist.wifi.state persist.sys.iap2.wifi persist.iap2.iden.wireless persist.service.adb.tcp.enable; do
     echo "- $p=$(getprop $p)"
   done
+  # 1.8.0 베타 2 NM-1(NEMESIS 1.16.8 ADB 타일): USB 모드·무선 ADB 포트 값(영문·숫자만, 40자), NEMESIS 표시 파일은 있는지만
+  for p in sys.usb.config persist.sys.usb.config service.adb.tcp.port; do
+    echo "- $p=$(getprop $p 2>/dev/null | $BB awk '{ gsub(/[^A-Za-z0-9,._-]/, ""); print substr($0, 1, 40); exit }')"
+  done
+  echo "- NEMESIS 표시 파일: adb_usb_prev $(yn [ -e ${NEMDATA:-/data/nemesis}/adb_usb_prev ]), adb_tcp_prev $(yn [ -e ${NEMDATA:-/data/nemesis}/adb_tcp_prev ]), ota_blocked $(yn [ -e ${NEMDATA:-/data/nemesis}/ota_blocked ])"
   echo
   echo "## Wi-Fi"
   echo "- Wi-Fi 장치(wlan0): $(yn [ -d /sys/class/net/$WIF ])"
   echo "- 순정 hostapd: $(yn [ -x /system/bin/hostapd ]), dnsmasq: $(yn [ -x /system/bin/dnsmasq ])"
+  echo "- 순정 방화벽(wlan0): $(fw_wlan0)"
+  echo "- 순정 방화벽 무선 안드로이드 오토 포트(40515): $(fw_aa)"
   echo "- Wi-Fi 설정(wifi_on): $(settings get global wifi_on 2>/dev/null), 순정 AP 저장값(wifi_ap_on): $(settings get global wifi_ap_on 2>/dev/null)"
   # 1.7.2(P-7): 서비스가 wifi_ap_on을 1에서 0으로 바꾼 기록(원래 값, 숫자만). 없으면 바꾼 적 없음(또는 되돌림)
   _apo=$(cat $APON_ORIG 2>/dev/null); case "$_apo" in ''|*[!0-9]*) _apo=없음 ;; esac
@@ -884,6 +1185,9 @@ report() {
   # 1.7.3(K-3): softap.conf·AP 판정·연결 수는 위 kp_verdict(kp_collect)가 구한 값을 다시 쓴다(두 번 읽지 않음)
   _kyn() { if [ "$1" = yes ]; then echo 예; else echo 아니요; fi; }
   echo "- softap.conf: $(yn [ -s $SRC ]), 찾은 문자열 ${NS:-0}개, 카플레이 SSID 길이 ${#S2}, 비밀번호 길이 ${#S4}"
+  # 베타 3(B3-12): 상태 화면 앱이 순정과 같은 API(WifiManager.getWifiApConfiguration)로 읽은 길이(값은 없음)와 파일 값 길이를 나란히
+  ap_len_line
+  ap_src_line
   echo "- 우리 hostapd: $(_kyn $K_OURAP), 우리 DHCP: $(_kyn $K_DHCP)"
   echo "- 다른 hostapd (순정 핫스팟): $(_kyn $K_OTHER)"
   # 1.6.2: 순정 hostapd의 SSID가 카플레이용(carplay)인지 일반 핫스팟(hotspot)인지. 값은 비교만 한다.
@@ -898,7 +1202,7 @@ report() {
   echo
   perf_report
   echo
-  dongle_info
+  dongle_pub
   # 1.7.3(H-1): HMG-API가 적용을 거절했을 때 그 이유 줄(우리 계획 기록 plan.txt의 problem 줄, 숫자·영문·경로만)
   if plan_problems | $BB grep -q .; then
     echo
@@ -951,6 +1255,71 @@ report() {
 # /data/local/tmp 바로 아래에 둔다. 값은 예/아니요·버전·개수·길이뿐이다 (SSID, 비밀번호, 휴대폰 이름, MAC, IP 없음).
 STATUS=${STATUS:-/data/local/tmp/korea-projection-status.txt}
 yesno() { if "$@" >/dev/null 2>&1; then echo yes; else echo no; fi; }
+# 1.8.0 변조 검사: 상태 화면 판정용(빠르게). 서비스가 남긴 결과가 bad이거나 목록 파일이 없으면 변조로 본다
+# 베타 3(B3-13, 메인 결정 11-23): 이 빌드가 실제로 쓰는 package-version 하나와 변조 검사 목록 줄 수. 승격 빌드 때 그 빌드 값으로 바꾼다
+# (stub가 NEMESIS.data·목록과 같은지 본다). 다르면 리포트에 "공식 버전 아님"(설치·동작은 막지 않음, 표시만)
+KP_OFFICIAL_VERS="1.8.0"
+KP_OFFICIAL_FILES=73
+kp_official_line() {
+  _kov=$(pver $APP/NEMESIS.data); _kof=$($BB awk 'END { print NR + 0 }' ${KPLIST:-$APP/bin/kp-files.md5} 2>/dev/null)
+  case " $KP_OFFICIAL_VERS " in *" $_kov "*) [ "$_kof" = "$KP_OFFICIAL_FILES" ] && return 0 ;; esac
+  echo "- **공식 버전 아님**(버전 ${_kov:-?}, 파일 ${_kof:-?}개 / 공식 $KP_OFFICIAL_VERS, ${KP_OFFICIAL_FILES}개)"
+}
+# 베타 3(B3-12): 앱이 남기는 길이 기록(키=값, 값은 숫자·짧은 낱말만 받음). ap_ssid_len_svc·ap_psk_len_svc(서비스 값 길이),
+# ap_psk_svc_err(빈 값 = 성공, 아니면 짧은 이유: perm·nomethod·null·err), ap_svc_boot(그 부팅 id), ap_svc_t(그때 epoch)
+KP_APLEN=${KP_APLEN:-/data/data/korea.projection.app/files/apcfg.len}
+ap_len_line() {
+  if [ ! -s $KP_APLEN ]; then echo "- 카플레이 비밀번호 길이(Wi-Fi 서비스, 앱이 읽음): 기록 없음"; return 0; fi
+  $BB awk -F= -v fl="${#S4}" -v bid="$(cat ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null)" '
+    $1 ~ /^ap_(ssid_len_svc|psk_len_svc|psk_svc_err|svc_boot|svc_t)$/ && $2 ~ /^[0-9A-Za-z_-]*$/ && length($2) <= 40 { v[$1] = $2 }
+    END {
+      w = (v["ap_svc_boot"] != "" && v["ap_svc_boot"] == bid) ? "이번 부팅" : "지난 부팅"
+      if (v["ap_psk_svc_err"] != "") { print "- 카플레이 비밀번호 길이(Wi-Fi 서비스, 앱이 읽음): 읽지 못함(" v["ap_psk_svc_err"] ", " w "), 파일 " fl; exit }
+      m = (v["ap_psk_len_svc"] == fl) ? "같음" : "다름"
+      print "- 카플레이 비밀번호 길이(Wi-Fi 서비스, 앱이 읽음): " v["ap_psk_len_svc"] " / 파일 " fl " (" m ", SSID 길이 서비스 " v["ap_ssid_len_svc"] ", " w ")" }' $KP_APLEN 2>/dev/null
+}
+# 1.8.0 정식 C4: 서비스가 우리 핫스팟에 쓴 AP 값의 출처(hotspot.sh ap_src_apply가 남긴 $APSRC 한 줄, 값 없음).
+# 칸: <부팅 id> <svc|file|def> <이유 또는 -> <SSID 길이> <비밀번호 길이> <파일 비밀번호 길이>. 숫자·짧은 낱말만 받는다
+ap_src_line() {
+  [ -s $APSRC ] || { echo "- 핫스팟에 쓴 AP 값: 기록 없음"; return 0; }
+  $BB awk -v bid="$(cat ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null)" '
+    NR == 1 && NF == 6 && $2 ~ /^(svc|file|def)$/ && $3 ~ /^(-|noapp|timeout|oldboot|noval|badchar|badlen)$/ && $4 ~ /^[0-9]+$/ && $5 ~ /^[0-9]+$/ && $6 ~ /^[0-9]+$/ {
+      w = ($1 != "" && $1 != "none" && $1 == bid) ? "이번 부팅" : "지난 부팅"
+      if ($2 == "svc") print "- 핫스팟에 쓴 AP 값: 서비스(SSID " $4 "자·비밀번호 " $5 "자, 파일 비밀번호 " $6 "자, " w ")"
+      else if ($2 == "file") print "- 핫스팟에 쓴 AP 값: 파일(" $3 ", 비밀번호 " $5 "자, " w ")"
+      else print "- 핫스팟에 쓴 AP 값: 파일(기본 위치, " w ")"
+      ok = 1 }
+    END { if (!ok) print "- 핫스팟에 쓴 AP 값: 기록을 읽지 못함" }' $APSRC 2>/dev/null
+}
+# 니로 정식 1차(11-25): AA 기록을 어떻게 읽는가(hotspot.sh aa_events). 숫자·상태만(줄 내용·태그 없음).
+# 계속 받기면 logcat이 살아 있는지·받는 파일 크기·.1 유무·지금 파일에서 읽은 줄 수(돌리면 0부터), 예전 방식이면 그 까닭(nofile·died)
+aa_stream_line() {
+  aa_bid
+  _asm=계속받기; _asr=; _aso=; [ -f $W/aa.old ] && read _aso < $W/aa.old 2>/dev/null
+  if [ -n "$_aso" ] && [ "$_aso" = "$_aabid" ]; then
+    _asm=예전방식; _asw1=; _asw2=; [ -f $W/aa.why ] && read _asw1 _asw2 < $W/aa.why 2>/dev/null
+    [ "$_asw1" = "$_aabid" ] && case "$_asw2" in nofile|died) _asr=$_asw2 ;; esac
+  fi
+  _asa=아니요; aalog_alive && _asa=예
+  _asz=없음; [ -f $AASTREAM ] && { _asz=$($BB wc -c < $AASTREAM 2>/dev/null); case "$_asz" in *[!0-9\ ]*|'') _asz=? ;; *) _asz="$(echo $_asz)바이트" ;; esac; }
+  _as1=없음; [ -f $AASTREAM.1 ] && _as1=있음
+  _asn=0; _asb=; [ -f $AASTREAM.pos ] && read _asb _asn _asx < $AASTREAM.pos 2>/dev/null
+  [ "$_asb" = "$_aabid" ] || _asn=0; case "$_asn" in ''|*[!0-9]*) _asn=0 ;; esac
+  case "$_asm" in
+    예전방식) echo "- AA 기록 받기: 예전 방식(까닭 ${_asr:-모름}), 계속 받는 logcat 살아 있음 $_asa" ;;
+    *) echo "- AA 기록 받기: 계속 받기, logcat 살아 있음 $_asa, 받는 파일 $_asz(.1 $_as1), 지금 파일에서 읽은 줄 $_asn" ;;
+  esac
+}
+# 빌드 표시: 변조 검사 목록의 md5 앞 8자리(목록이 없거나 md5를 못 쓰면 "모름")
+kp_build() {
+  _kbh=$($BB md5sum < ${KPLIST:-$APP/bin/kp-files.md5} 2>/dev/null | $BB awk '{ print substr($1, 1, 8) }')
+  case "$_kbh" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) echo "$_kbh" ;; *) echo "모름" ;; esac
+}
+kp_tampered() {
+  [ -s ${KPLIST:-$APP/bin/kp-files.md5} ] || return 0
+  case "$(cat $W/kp.tamper 2>/dev/null)" in bad*) return 0 ;; esac
+  return 1
+}
 # HMG-API 무선 모드의 상태는 HMG-API 자기 파일로 본다(NEMESIS 목록은 wireless.projection과 충돌하면 등록되지 않고,
 # 모드를 꺼도 남는다). /data/hmgapi/mods/<id>/mod.json: 설치, .disabled: 꺼짐,
 # /data/hmgapi/settings/<id>.json의 "bridge":false: 무선 카플레이(블루투스 브리지) 설정 꺼짐 (Mods.java, settings.json)
@@ -1030,11 +1399,14 @@ kp_collect() {
   K_PROD=$(getprop ro.build.product)
   K_FEATS="$(pm list features 2>/dev/null)
 "
-  parse_conf $SRC
+  # 베타 3(B3-7): 서비스와 같은 위치 고르기(읽히는 쪽, hotspot.sh src_pick)
+  src_pick
   K_HMG=$(echo $($BB grep -E '^(version|build) ' ${HMGINST:-/data/hmgapi/installed.txt} 2>/dev/null))
   _kv=${K_HMG#*version }; [ "$_kv" = "$K_HMG" ] && _kv=; K_HMGV=${_kv%% *}
   K_NEM=$(nemesis version 2>/dev/null)
   K_MOD=$(mod_state); K_MODON=$(mod_on_state); K_BRIDGE=$(bridge_state)
+  # 베타 3(B3-10): 우리 이름의 모드인데 작성자 키가 다름(다른 사람이 고친 수정판의 모드)
+  K_FAKEKEY=no; mod_fakekey && K_FAKEKEY=yes
   hmg_hooks_load; K_MH=${_MH%% *}; K_HK=${_HK%% *}; K_HKMAP=${_HK#* }
   K_OURAP=$(yesno running "hostapd $CONF"); K_DHCP=$(yesno our_dhcp_on)
   K_OTHER=$(yesno stock_ap_on); K_SSID=$(stock_ssid); K_APMODE=$(ap_mode $K_SSID)
@@ -1078,9 +1450,43 @@ k_feat() { case "$K_FEATS" in *"feature:$1
 "*) return 0 ;; esac; return 1; }
 # 판정 결과: V_CODE(영문 낱말), V_LV(0 좋음·1 확인 필요·2 문제), V_MSG(한국어 한두 문장), V_END(yes면 "이 차는 안 됨"으로 끝나 지우는 법을
 # 함께 보임, U-6), V_FIRST(G-4 "먼저 할 일", 없으면 빈 값), V_S1~3(U-9 차주용 요약 3줄: 설치·무선 Wi-Fi·폰 연결)
+# 베타 2 RS-15 리뷰: 서비스가 남긴 동글 상태가 쓰는 중(wait·up·ok)인가(busybox grep의 \| 대신 read로)
+# 시험판 4(리뷰 낮음 2): 동글 길을 기다리는 중(settle·replug)도 동글을 쓰는 중으로 본다(그동안 부품 없음 판정을 내지 않게)
+dg_state_inuse() { _dgu1=; [ -f $W/dongle.state ] && read _dgu1 _dgu2 < $W/dongle.state 2>/dev/null; case "$_dgu1" in wait|up|ok|bootwait|noap|nodevstuck|nobind|reupmax) return 0 ;; esac; return 1; }
+# 시험판 5: 동글 길 판정. 동글 사용이 켜져 있고 동글 상태가 기다림·올리는 중·꽂기 전·동글 AP 띄우는 중이거나,
+# 이번 부팅 무선이 없는 동글 실패(noap·nodevstuck·목록 밖)면 0과 DGV_LV·DGV_MSG(상태 키 dongle_lv·dongle_msg와 같은 문구)
+DG_APUP_MSG="동글로 핫스팟을 띄우는 중입니다. 재부팅하지 마세요."
+dg_verdict() {
+  # 리뷰 낮음 1: 꽂기 전에 동글 사용을 껐으면 다음 점검(30초)에 내비 Wi-Fi로 바뀌는 중이다(재부팅 안내를 내지 않음)
+  # 베타 3(B3-4·B2-5, 제보 #498): 이번 부팅 설치가 실패했으면 동글 단계 문구("띄우는 중입니다" 등)보다 실패 판정을 먼저 보인다
+  [ "$K_PST" = fail ] && return 1
+  if [ ! -f $DG_ON ]; then
+    _dgvs=; [ -f $W/dongle.state ] && read _dgvs _dgvx < $W/dongle.state 2>/dev/null
+    _dgv1=; [ -f $W/dongle.seen1 ] && read _dgv1 _dgvy < $W/dongle.seen1 2>/dev/null
+    # 재리뷰 낮음: 허용 동글이 꽂혀 있는데 아직 안 붙었으면 바로 바꾸지 않는다(프로브 중) → 다음 시동부터라고 알림
+    # 베타 3(B3-2): 부품 없는 차에서 꽂기 전에 끈 부팅(plugoffnw)은 유선 프로젝션을 쓸 수 있다고 알린다(상태 키 dongle은 앱 결정대로 off)
+    [ "$_dgvs" = plugoffnw ] && { DGV_LV=1; DGV_MSG=$DG_PLUGOFFNW_MSG; return 0; }
+    case "$_dgvs" in bootwait|wait|up) [ "$_dgv1" != "$(dg_kv_bid)" ] || return 1; DGV_LV=1
+      dg_usb; if [ "$DG_USB" = ok ]; then DGV_MSG="동글 사용을 껐습니다. 다음 시동부터 내비 Wi-Fi로 돌아갑니다."; else DGV_MSG="내비 Wi-Fi로 바꾸는 중입니다. 재부팅하지 마세요."; fi
+      return 0 ;; esac
+    return 1
+  fi
+  _dgvs=; [ -f $W/dongle.state ] && read _dgvs _dgvx < $W/dongle.state 2>/dev/null
+  case "$_dgvs" in
+    bootwait|wait|noap|nodevstuck|nobind|notours|reupmax) ;;
+    up|ok) [ "$K_OURAP" = no ] && [ "$_vconn" = no ] || return 1 ;;
+    *) return 1 ;;
+  esac
+  _dgvk=$(dg_kv)
+  DGV_LV=$(echo "$_dgvk" | $BB awk -F= '$1 == "dongle_lv" { print $2; exit }')
+  DGV_MSG=$(echo "$_dgvk" | $BB awk '/^dongle_msg=/ { sub(/^dongle_msg=/, ""); print; exit }')
+  case "$DGV_LV" in 0|1|2) ;; *) DGV_LV=1 ;; esac
+  [ -n "$DGV_MSG" ] || { DGV_MSG=$DG_APUP_MSG; DGV_LV=1; }
+  return 0
+}
 kp_verdict() {
   kp_collect
-  V_CODE=; V_LV=1; V_MSG=; V_END=no; V_FIRST=
+  V_CODE=; V_LV=1; V_MSG=; V_END=no; V_FIRST=; V_FIRST_LV=
   # 재리뷰 L-3: 지금 폰이 연결돼 있는가(카플레이 연결 수 또는 이번 부팅 무선 AA 연결). 연결 중이면 핫스팟·Wi-Fi 꺼짐 판정을 내지 않는다
   _vconn=no; { [ "${K_CP:-0}" != 0 ] || [ "$K_AAOK" = yes ]; } && _vconn=yes
   _vs() { V_CODE=$1; V_LV=$2; V_MSG=$3; }
@@ -1088,76 +1494,97 @@ kp_verdict() {
   # HMG-API를 지우면(uninstall.sh) 모드가 바꾼 파일이 순정으로 돌아가 다시 적용해야 하므로, 지우지 말고 다시 설치(업데이트)하라고 쓴다
   # 8~9장 리뷰 L1: 이번 부팅은 부팅 보호로 시작했는데 지금 starts가 4보다 작으면(걸린 부팅에서는 4 이상이 남는다) 그 사이 HMG-API를
   # 다시 설치해 0이 된 것이다. 같은 일을 또 시키지 않고 재부팅만 안내한다
-  if [ "$K_GUARD" = yes ] && [ "$_vconn" = no ] && [ "$K_ZHOOK" = guard ] && [ -n "$K_STARTS" ] && [ "$K_STARTS" -lt 4 ]; then
-    _vs bootguard 1 "HMG-API를 다시 설치한 것으로 보입니다. 내비를 재부팅하고 3분 넘게 켜 두세요."
+  # 1.8.0 변조 검사(소유자 결정 11-18): 서비스가 패키지 파일이 목록과 다르다고 남겼거나($W/kp.tamper "bad"), 목록 파일이 없으면
+  # 다른 무엇보다 앞에 "변조된 Korea Projection"을 보인다(서비스는 아무것도 하지 않고 멈춰 있음). 빠르게 판정하려고 여기서는 다시 해시하지 않는다
+  if kp_tampered; then
+    _vs tampered 2 "$TAMPER_MSG"; V_END=yes
+  elif [ "$K_GUARD" = yes ] && [ "$_vconn" = no ] && [ "$K_ZHOOK" = guard ] && [ -n "$K_STARTS" ] && [ "$K_STARTS" -lt 4 ]; then
+    _vs bootguard 1 "HMG-API를 다시 설치한 것으로 보입니다. 재부팅하고 3분 넘게 켜 두세요."
   elif [ "$K_GUARD" = yes ] && [ "$_vconn" = no ]; then
     _vs bootguard 2 "HMG-API가 재부팅이 너무 잦은 것으로 보고 무선 기능을 껐습니다. HMG-API를 지우지 말고 NEMESIS에서 다시 설치(업데이트)한 뒤 재부팅하고, 3분 넘게 켜 두세요."
+  # 베타 3(B3-7): softap.conf를 다시 읽는 처음 3분은 그 안내(실패 문구 대신)
+  elif [ "$K_PST" = run ] && [ "$K_PSTAGE" = "$SOFTAP_RETRY_MSG" ]; then _vs installing 1 "$SOFTAP_RETRY_MSG"
   elif [ "$K_PST" = run ]; then _vs installing 1 "설치 중입니다. 끝날 때까지 기다려 주세요."
   elif ! car_in "$K_PROD" "$CARS"; then _vs untested 1 "확인되지 않은 차입니다. QR로 제보해 주세요."
   elif [ -z "$K_HMGV" ]; then _vs nohmgapi 2 "HMG-API가 없습니다. HMG-API 1.0.2 이상을 설치해 주세요."
   elif ver_lt "$K_HMGV" 1.0.2; then _vs oldhmgapi 2 "지원하지 않는 HMG-API 버전입니다. 1.0.2 이상으로 업데이트해 주세요."
   # 리뷰 H-1: 기록이 있어도 지금 칩이 보이거나 모드가 이미 있으면(다른 앱으로 Wi-Fi를 켠 차 등) "안 됨"으로 보지 않는다
+  # 시험판 5 리뷰 중간 5: 동글을 쓰는 중(기다림·꽂기 전·동글 AP 띄우는 중·무선 없는 실패)이면 부품 없음·칩 판정보다 먼저 동글 문구
+  elif dg_verdict; then _vs dongle "$DGV_LV" "$DGV_MSG"
   elif [ -f $BK/wifi.nopart ] && [ "$K_MOD" = no ] && ! wifi_chip_seen; then _vs nopart 2 "$NOPART_MSG"; V_END=yes
+  # 베타 2 RS-15(#425): 우리가 넣지 않은 다른 무선 모드(예: 2.3.0)가 깔린 부품 없는 차는 "무선 모드가 꺼짐·적용 안 됨"보다
+  # 부품 없음이 먼저다. 지금 연결이 없고, 다른 Wi-Fi 패키지의 hostapd도 돌지 않을 때만(동글 패키지 등으로 무선이 되는 차를 덮지 않게)
+  # 리뷰 중간: 우리 AP가 떠 있거나(동글 차는 내장 칩이 없어 nopart 기록이 남음) 동글 길을 쓰는 중이면 여기로 오지 않는다
+  elif [ -f $BK/wifi.nopart ] && [ "$K_MOD" != no ] && [ ! -f $BK/mod.ours ] && ! wifi_chip_seen && [ "$_vconn" = no ] && [ "$K_OURAP" = no ] \
+      && ! foreign_hostapd && ! dg_state_inuse; then _vs nopart 2 "$NOPART_MSG"; V_END=yes
   elif [ -f $BK/wifi.nochip ] && [ "$K_MOD" = no ] && ! wifi_chip_seen; then _vs nochip 2 "$NOCHIP_MSG"; V_END=yes
   elif [ "$K_MOD" = no ] && [ -f $BK/wifi.wake ] && [ ! -f $BK/wifi.woke ] && [ ! -f $BK/mod.tried ] && ! wifi_chip_seen \
       && wake_count && [ "$_wbad" = 0 ] && [ "$_wc" -lt "$WAKE_BOOTS" ]; then
     # 재리뷰 중간 1: 아직 깨울 횟수가 남았을 때만(칩을 한 번 본 차·모드를 지운 차·횟수를 다 쓴 차는 원래 판정으로)
     _vs wificheck 1 "$WIFI_CHECK_MSG (확인 $_wc/$WAKE_BOOTS)"
   elif [ -d /data/nemesis/apps/wireless.projection ] && [ "$K_MOD" = no ]; then
-    _vs otherpkg 2 "다른 패키지인 wireless.projection이 설치되어 있어 충돌될 수 있습니다. wireless.projection을 삭제한 뒤 내비를 재부팅해 주세요."
+    _vs otherpkg 2 "다른 패키지인 wireless.projection이 설치되어 있어 충돌할 수 있습니다. wireless.projection을 삭제한 뒤 재부팅해 주세요."
   elif [ "$K_OURAP" = no ] && [ "${K_CP:-0}" = 0 ] && [ "$K_AAOK" = no ] && foreign_hostapd; then
     # 1.7.3(G-3): 우리 것도 순정(netd)도 아닌 hostapd(USB 동글 패키지 등)가 실제로 돌고, 연결도 없음. 리뷰 H-2: 순정 설정을
     # 못 읽어 stock_ssid가 unknown인 경우(순정 카플레이 AP 차 등)는 여기로 오지 않는다. 지우는 법(U-6)은 붙이지 않는다
     # 1.7.4(Q-8): 1.8.0(USB Wi-Fi 동글)에서 바뀔 곳. 동글 차는 우리 hostapd가 동글 장치(WIF)를 쓰게 되므로, 이 판정·문구(G-3)와
     # 다른 동글 패키지(usbwifi.hotspot·stock.hotspot)와의 관계를 그때 다시 정한다. 1.7.4에서는 문구·조건을 바꾸지 않는다
-    _vs otherwifi 2 "다른 Wi-Fi 패키지가 핫스팟을 쓰고 있어 함께 쓸 수 없습니다. 그 패키지를 지운 뒤 내비를 재부팅해 주세요."
+    _vs otherwifi 2 "다른 Wi-Fi 패키지가 핫스팟을 쓰고 있어 함께 쓸 수 없습니다. 그 패키지를 지운 뒤 재부팅해 주세요."
   elif [ "$K_PST" = reboot ]; then
     # 1.7.3(U-8): 남은 재부팅 횟수. 모드를 새 판으로 바꾸는 중이면 재부팅이 두 번 필요하다(G-2①)
     # 리뷰 L-3: 두 번 재부팅이 필요할 때는 진행 기록 문구 대신 한두 문장으로
     # 리뷰 L10: 모드는 아직 옛 판이다(재부팅 뒤 서비스가 바꾼다). "바꿨습니다"라고 쓰지 않는다
-    if [ "$K_PENDING" = yes ]; then _vs reboot 1 "재부팅하면 무선 모드를 새 판으로 바꿉니다. 재부팅하고 3분 뒤 한 번 더 재부팅해 주세요(남은 재부팅 2번)."
+    if [ "$K_PENDING" = yes ]; then _vs reboot 1 "재부팅하면 무선 모드를 새 버전으로 바꿉니다. 재부팅하고 3분 뒤 한 번 더 재부팅해 주세요(남은 재부팅 2번)."
     else
       # 1.7.4(소유자 문구, 1.7.3 재리뷰 L-5의 "진행 기록 첫 문장 + 재부팅 1번" 두 문장을 바꿈): 진행 기록 첫 문장을 앞에 붙이지 않는다(K_PSTAGE는 실패 판정 failed에서만 씀)
-      _vs reboot 1 "내비를 3분 후 재부팅해 주세요."
+      # 1.8.0 정식(A4·H-5): 업데이트로 무선 모드를 바꾼 재부팅이면 소유자 문구. 옛 버전 진행 기록 문장도 같은 경우로 본다(업데이트 직후 부팅)
+      case "$K_PSTAGE" in
+        "$MODUPD_MSG"|"무선 모드를 새 버전("*")으로 바꿨습니다. 3분 후 재부팅해 주세요.") _vs reboot 1 "$MODUPD_MSG" ;;
+        *) _vs reboot 1 "3분 후 재부팅해 주세요." ;;
+      esac
     fi
   elif [ "$K_PENDING" = yes ] && [ "$(cat $BK/mod.try 2>/dev/null)" = "$(cat ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null)" ]; then
     # 리뷰 L10: 이번 부팅에 이미 시도했는데 아직 옛 판이면 이번에는 못 바꾼 것이다(일시 실패, 다음 부팅에 다시 시도)
-    _vs modwait 1 "무선 모드를 이번에는 새 판으로 바꾸지 못했습니다. 재부팅하면 다시 시도합니다."
+    _vs modwait 1 "무선 모드를 이번에는 새 버전으로 바꾸지 못했습니다. 재부팅하면 다시 시도합니다."
   elif [ "$K_PENDING" = yes ]; then
-    _vs modwait 1 "무선 모드를 새 판으로 바꾸는 중입니다. 3분 뒤 한 번 더 재부팅해 주세요(남은 재부팅 1번)."
+    _vs modwait 1 "무선 모드를 새 버전으로 바꾸는 중입니다. 3분 뒤 한 번 더 재부팅해 주세요(남은 재부팅 1번)."
   elif [ "$K_PST" = fail ] && plan_this_boot && plan_problems | $BB grep -q .; then
     # 1.7.3(H-1): HMG-API가 적용을 거절함(계획에 problem 줄). 우리가 넣지 않은 파일은 고치지 않는다(D-5)
     _vs hmgrefuse 2 "HMG-API가 적용을 거절했습니다. HMG-API 앱의 'Can't apply' 창 아래쪽을 확인해 주세요."
   elif [ "$K_PST" = fail ] && [ -n "$K_PSTAGE" ]; then
     # 1.7.4(P-4, #277): 서비스가 진행 기록에 남긴 이유 문장(hotspot.sh)으로 판정 코드를 가른다(QR의 verdict로 이유를 알 수 있게)
     case "$K_PSTAGE" in
-      "$MAPFAIL_MSG") _vs mapfail 2 "$K_PSTAGE" ;;
-      "$NOMAP_MSG") _vs nomap 2 "$K_PSTAGE" ;;
+      # 배포판(문구 수정 11-23): 업데이트한 부팅에는 옛 버전이 쓴 옛 문장이 진행 기록에 남을 수 있어 옛 문장도 받고, 보이는 문장은 새 것으로
+      "$MAPFAIL_MSG"|"$MAPFAIL_MSG_OLD") _vs mapfail 2 "$MAPFAIL_MSG" ;;
+      "$NOMAP_MSG"|"$NOMAP_MSG_OLD") _vs nomap 2 "$NOMAP_MSG" ;;
       # 리뷰: 다시 깨우지 않는 상태라 재부팅으로 안 바뀔 수 있다(문제, 빨강)
       "$WIFIGONE_MSG") _vs wifigone 2 "$K_PSTAGE" ;;
       *) _vs failed 2 "$K_PSTAGE" ;;
     esac
+  elif [ "$K_FAKEKEY" = yes ]; then
+    # 베타 3(B3-10): HMG-API가 우리 새 버전 설치를 거부한다(키가 다름). 연결이 되고 있으면 노랑, 아니면 빨강
+    if [ "${K_CP:-0}" = 0 ]; then _vs modkey 2 "$MODKEY_MSG"; else _vs modkey 1 "$MODKEY_MSG"; fi
   elif [ "$K_FOREIGN" = yes ] && [ "${K_CP:-0}" = 0 ]; then
     # 1.7.3(G-2③): 외국·공식 모드. HMG-API를 통째로 지우면 권한 파일이 남아 거절될 수 있다(#94·#130)
-    _vs foreign 2 "차에 있는 HMG-API 무선 모드가 한국 차용이 아닙니다. HMG-API 앱에서 그 모드만 지우고(HMG-API는 지우지 말고) 적용한 뒤 재부팅해 주세요."
+    _vs foreign 2 "차에 있는 HMG-API 무선 모드가 국내용이 아닙니다. HMG-API 앱에서 그 모드만 지우고(HMG-API는 지우지 말고) 적용한 뒤 재부팅해 주세요."
   elif [ "$K_MOD" = no ] && [ -f $BK/mod.tried ]; then
     # 1.7.3(G-2②): 차주가 지운 상태(지운 기록)와 넣지 못한 상태를 다른 문구로
     _vs modgone 2 "무선 모드를 지운 기록이 있어 다시 넣지 않습니다. 다시 쓰려면 Korea Projection을 지우고 다시 설치한 뒤 재부팅해 주세요."
   elif [ "$K_MOD" = no ]; then
-    _vs nomod 2 "무선 모드를 넣지 못했습니다. USB를 꽂고 Launch 화면의 [제보 파일 만들기]를 눌러 보내 주세요."
+    _vs nomod 2 "무선 모드를 넣지 못했습니다. USB를 꽂고 상태 화면의 [제보 파일 만들기]를 눌러 보내 주세요."
   elif [ "$K_MODON" = no ]; then _vs modoff 2 "HMG-API 무선 모드가 꺼져 있습니다. HMG-API 앱에서 켜고 Apply changes 후 다시 시작해 주세요."
   elif [ "$K_BRIDGE" = off ]; then _vs bridgeoff 2 "무선 모드의 'Wireless CarPlay' 설정이 꺼져 있습니다. HMG-API 앱에서 켜고 Apply changes 후 다시 시작해 주세요."
   elif [ "$K_HK" = off ]; then
     case "$K_HKMAP" in
-      mapped) _vs hooksoff 1 "HMG-API 훅이 꺼져 있습니다. HMG-API 앱 Settings에서 'Check the map on this car'를 누른 뒤 내비를 재부팅해 주세요." ;;
-      none) _vs hooksoff 1 "HMG-API에 이 차의 지도가 없어 훅이 꺼져 있습니다. QR로 제보해 주세요." ;;
-      mismatch) _vs hooksoff 1 "HMG-API 지도가 이 차의 소프트웨어와 맞지 않아 훅이 꺼져 있습니다. QR로 제보해 주세요." ;;
-      *) _vs hooksoff 1 "HMG-API 훅이 꺼져 있습니다(마지막 부팅 기록). 내비를 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요." ;;
+      mapped) _vs hooksoff 1 "HMG-API 훅이 꺼져 있습니다. HMG-API 앱 Settings에서 'Check the map on this car'를 누른 뒤 재부팅해 주세요." ;;
+      none) _vs hooksoff 1 "HMG-API에 이 차의 MAP이 없어 훅이 꺼져 있습니다. QR로 제보해 주세요." ;;
+      mismatch) _vs hooksoff 1 "HMG-API MAP이 이 차의 소프트웨어와 맞지 않아 훅이 꺼져 있습니다. QR로 제보해 주세요." ;;
+      *) _vs hooksoff 1 "HMG-API 훅이 꺼져 있습니다(마지막 부팅 기록). 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요." ;;
     esac
-  elif [ "$K_MH" = off ]; then _vs modhooksoff 2 "HMG-API가 이 차에서 무선 모드를 켜지 못했습니다(이 차와 맞지 않는 부분이 있음). 내비를 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 리포트를 보내 주세요."
-  elif ! k_feat com.hkmc.software.connectivity.carplay_wireless; then _vs nofeat 2 "무선 카플레이 기능이 꺼져 있습니다. HMG-API 무선 모드를 확인해 주세요."
+  elif [ "$K_MH" = off ]; then _vs modhooksoff 2 "HMG-API가 이 차에서 무선 모드를 켜지 못했습니다(이 차와 맞지 않는 부분이 있음). 재부팅해 보시고, 그래도 같으면 USB를 꽂고 [제보 파일 만들기]로 제보 파일을 보내 주세요."
+  elif ! k_feat com.hkmc.software.connectivity.carplay_wireless; then _vs nofeat 2 "무선 프로젝션 기능이 꺼져 있습니다. HMG-API 무선 모드를 확인해 주세요."
   elif [ "$K_APMODE" != stock ] && [ -f $BK/stockap.seen ] && [ "$K_OURAP" = no ] && [ "$_vconn" = no ]; then
-    _vs stockoff 1 "Wi-Fi가 지금 꺼져 있습니다. 아이폰을 연결해 보고, 안 되면 내비를 3분 후 재부팅해 주세요."
+    _vs stockoff 1 "Wi-Fi가 지금 꺼져 있습니다. 휴대폰을 연결해 보고, 안 되면 3분 후 재부팅해 주세요."
   elif [ "$K_APMODE" != stock ] && [ "$K_NOWLAN" = yes ] && [ "$K_OURAP" = no ] && [ "$_vconn" = no ] && [ "$K_NLB" -ge 3 ]; then
     # 리뷰 M-3: 모드가 있는데 wlan0이 3번 넘는 부팅 동안 안 생김(그랜저 IG #55 꼴). 재리뷰 중간 3②: 칩 실패(W-2·W-6, 안 됨으로 끝남)는
     # 근거(커널 칩 실패 줄·module_version 3)가 있을 때만. 근거가 없으면 제보를 부탁한다(지우는 법 없음)
@@ -1168,26 +1595,26 @@ kp_verdict() {
     _nl=$K_NLB; [ "$_nl" -ge 1 ] || _nl=1
     _vs wifioff 1 "$WIFI_CHECK_MSG (확인 $_nl/3)"
   elif [ "$K_APMODE" != stock ] && { [ "$K_OURAP" = no ] || [ "$K_DHCP" = no ]; } && [ "$_vconn" = no ]; then
-    _vs apoff 1 "핫스팟이 꺼져 있습니다. 내비를 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요."
+    _vs apoff 1 "핫스팟이 꺼져 있습니다. 3분 후 재부팅(RESET 버튼 또는 NEMESIS 재부팅)한 뒤 다시 확인해 주세요."
   elif ver_lt "${K_NEM:-0}" 1.16; then _vs oldnemesis 1 "NEMESIS를 1.16 이상으로 업데이트해 주세요."
   elif [ "${K_CP:-0}" != 0 ] || [ "$K_AAOK" = yes ]; then
     # 1.7.3(U-10): 확인 안 된 차(README ✅ 아님)가 연결되면 제보를 부탁한다(QR 요약 맨 앞 result: connected).
     # 리뷰 L-6: 무선 안드로이드 오토 연결도 연결로 본다(CLAUDE.md 2장 ✅ 기준)
     # 베타 1(소유자 요청): 카플레이와 안드로이드 오토를 한 줄로(상태 화면은 AA 준비됨·연결됨 줄을 따로 두지 않음)
     if car_in "$K_PROD" "$CARS_SEEN"; then
-      if [ "${K_CP:-0}" != 0 ] && [ "$K_AAOK" = yes ]; then _vs connected 0 "무선 카플레이·안드로이드 오토 연결됨"
+      if [ "${K_CP:-0}" != 0 ] && [ "$K_AAOK" = yes ]; then _vs connected 0 "무선 프로젝션 연결됨"
       # 리뷰 5: AA가 카플레이 때문에 기다리는 중(cpwait)이면 "준비됨"이라 하지 않는다(노란 안내 줄과 어긋나지 않게)
       elif [ "${K_CP:-0}" != 0 ] && [ "$K_AARDY" = yes ] && [ "$K_AAWAIT" = no ]; then _vs connected 0 "무선 카플레이 연결됨, 안드로이드 오토 준비됨"
       elif [ "${K_CP:-0}" != 0 ]; then _vs connected 0 "무선 카플레이 연결됨"
       # 리뷰 4: "카플레이 준비됨"은 우리 핫스팟이 켜져 있을 때만
       # 1.7.4(소유자 지시): Wi-Fi는 하나이고 카플레이·AA가 같은 Wi-Fi를 쓰므로 AA가 붙었으면 카플레이도 준비된 것으로 늘 보인다
-      else _vs connected 0 "무선 안드로이드 오토 연결됨, 카플레이 준비됨"; fi
+      else _vs connected 0 "무선 안드로이드 오토 연결됨"; fi
     else _vs newconnected 0 "연결됐습니다! QR로 '연결됨'을 알려 주시면 지원 목록에 올립니다."; fi
   # 1.7.4(소유자 지시): 순정 Wi-Fi 차도 둘 다 준비됨으로 보인다(같은 Wi-Fi, 근거 #101 캐스퍼 AX1).
   # 순정 Wi-Fi 차에서 우리 AA 신호(aa_sig)를 켜지 않는 동작은 그대로다(순정이 자기 AP를 이미 앎)
   # 1.7.4(L-9): AA 끄기 기능을 없애 "AA를 끈 차"(카플레이만 준비됨) 갈래를 뺐다
-  elif [ "$K_APMODE" = stock ]; then _vs ready 0 "무선 카플레이·안드로이드 오토 준비됨."
-  elif [ "$K_AARDY" = yes ]; then _vs ready 0 "무선 카플레이·안드로이드 오토 준비됨."
+  elif [ "$K_APMODE" = stock ]; then _vs ready 0 "무선 프로젝션 준비됨."
+  elif [ "$K_AARDY" = yes ]; then _vs ready 0 "무선 프로젝션 준비됨."
   else _vs ready 0 "무선 카플레이 준비됨(안드로이드 오토는 준비 중)."
   fi
   # 1.7.3(G-4): README ✅ 차종인데 문제가 있으면 "먼저 할 일". 근거 있는 끝(부품 없음·칩)·설치 중·재부팅 필요·확인 안 된 차는 빼고,
@@ -1196,7 +1623,7 @@ kp_verdict() {
   # 리뷰 L-1: 원인이 분명한 판정과 부팅 직후(5분 안)의 핫스팟 꺼짐에는 붙이지 않는다
   _vup=$(up_s); case "$_vup" in ''|*[!0-9]*) _vup=9999 ;; esac
   _g4=
-  case "$V_CODE" in installing|untested|nopart|nochip|nowlanfail|nowlanrepeat|reboot|modwait|wificheck|wifioff|failed|mapfail|nomap|wifigone|ready|connected|newconnected|nohmgapi|oldhmgapi|otherpkg|otherwifi|foreign|modgone|hmgrefuse|oldnemesis|bootguard) ;;
+  case "$V_CODE" in dongle|installing|untested|nopart|nochip|nowlanfail|nowlanrepeat|reboot|modwait|wificheck|wifioff|failed|mapfail|nomap|wifigone|ready|connected|newconnected|nohmgapi|oldhmgapi|otherpkg|otherwifi|foreign|modgone|modkey|hmgrefuse|oldnemesis|bootguard) ;;
     apoff) [ "$_vup" -lt 300 ] || _g4=1 ;;
     *) _g4=1 ;;
   esac
@@ -1204,22 +1631,61 @@ kp_verdict() {
        if car_model_seen "$K_PROD"; then
          _fd=$(fw_date "$K_PROD")
          if [ -n "$_fd" ] && [ -n "$_CMD" ] && [ "$_fd" -lt "$_CMD" ] && [ "${K_PROD%%.*}" != BDPE ]; then
-           V_FIRST="먼저 할 일: 내비 버전이 확인된 차($_CMD)보다 구버전입니다. 내비를 업데이트한 뒤 NEMESIS·HMG-API·Korea Projection을 다시 설치해 주세요."
+           V_FIRST="먼저 할 일: 내비 버전이 확인된 차($_CMD)보다 구버전입니다. 내비를 업데이트한 뒤 NEMESIS·HMG-API·Korea Projection을 다시 설치해 주세요."; V_FIRST_LV=1
          elif car_in "$K_PROD" "$CARS_SEEN"; then
-           V_FIRST="먼저 할 일: 같은 차에서 된 분이 있습니다. 3분 후 재부팅 2번, 최신 판 설치, 등록된 핸드폰을 모두 지운 후 다시 설정해 주세요."
+           V_FIRST="먼저 할 일: 같은 차에서 된 분이 있습니다. 3분 후 재부팅 2번, 최신 버전 설치, 등록된 휴대폰을 모두 지운 후 다시 설정해 주세요."
          fi
        fi
   fi
+  # 1.8.0 K-5(#259·#260·#266): 목록에 없는 차종이라도 내비가 확인된 판(260902)보다 옛것이면 내비 업데이트를 먼저 권한다(CLAUDE.md 2장).
+  # 지도 만들기·확인 실패(mapfail·nomap·failed), 모드 훅이 안 켜짐(modhooksoff, #259가 이 경우), 부팅 5분 뒤에도 핫스팟 꺼짐(apoff)에만 붙인다. 연결된 차·설치 중·
+  # 근거 있는 끝(부품 없음 등)·차주가 끈 것(모드 끔 등)에는 붙이지 않는다
+  if [ -z "$V_FIRST" ] && ! car_model_seen "$K_PROD" && [ "${K_PROD%%.*}" != BDPE ]; then
+    _fd=$(fw_date "$K_PROD")
+    if [ -n "$_fd" ] && [ "$_fd" -lt 260902 ]; then
+      # 리뷰 중간 1: G-4의 _g4를 이어 쓰지 않는다(그러면 모드를 끈 차 등에도 재설치를 권했다). 이 경우만 따로 고른다
+      _k5=
+      case "$V_CODE" in mapfail|nomap|failed|modhooksoff|apoff) _k5=1 ;; esac
+      [ "$V_CODE" = apoff ] && [ "$_vup" -lt 300 ] && _k5=
+      # 소유자 결정(11-18): 옛 내비에서도 잘 될 수 있으므로 오류가 아니라 주의(first_lv=1, 노랑)로 넘긴다
+      [ "$_k5" = 1 ] && { V_FIRST="먼저 할 일: 내비 버전이 확인된 차(260902)보다 구버전입니다. 내비를 업데이트한 뒤 NEMESIS·HMG-API·Korea Projection을 다시 설치해 주세요."; V_FIRST_LV=1; }
+    fi
+  fi
+  # 1.8.0 K-6(#128): 순정 Wi-Fi 차(ap_mode=stock)에 ADB TCP 스위치가 켜져 있으면 eth0 주소가 순정 대역과 겹칠 수 있다(추정, 차에서 확인 안 함).
+  # 연결된 차·설치 중에는 보이지 않는다. 다른 "먼저 할 일"(내비 업데이트 등)이 있으면 덮지 않는다. 판정·동작은 그대로(문구만)
+  if [ -z "$V_FIRST" ] && [ "$K_APMODE" = stock ] && [ "$(getprop persist.service.adb.tcp.enable 2>/dev/null)" = 1 ]; then
+    case "$V_CODE" in connected|newconnected|installing) ;;
+      *) V_FIRST="먼저 할 일: ADB TCP가 켜져 있습니다. ADB TCP를 끄고 재부팅해 주세요." ;;
+    esac
+  fi
+  # 1.8.0 베타 2 NM-2(NEMESIS 1.16.8): 무선 ADB 타일(service.adb.tcp.port=5555). K-6과 같은 조건(순정 Wi-Fi 차, 연결 안 됨·설치 중 아님).
+  # 리뷰 중간: 5555는 build.prop 등 다른 데서도 올 수 있어 NEMESIS가 켰다는 표시(adb_tcp_prev)가 있을 때만
+  if [ -z "$V_FIRST" ] && [ "$K_APMODE" = stock ] && [ -e ${NEMDATA:-/data/nemesis}/adb_tcp_prev ] && [ "$(getprop service.adb.tcp.port 2>/dev/null)" = 5555 ]; then
+    case "$V_CODE" in connected|newconnected|installing) ;;
+      *) V_FIRST="먼저 할 일: NEMESIS의 무선 ADB를 꺼 주세요."; V_FIRST_LV=1 ;;
+    esac
+  fi
+  # NM-2: USB ADB가 켜져 있으면(USB 포트가 기기 모드라 USB·유선 카플레이·동글을 못 씀) 다른 "먼저 할 일"보다 앞에 둔다. 연결 중·설치 중에도
+  # 보인다(USB 리포트·유선 카플레이를 못 쓰므로). NEMESIS가 켰다는 표시(adb_usb_prev)가 있을 때만 "NEMESIS의"라고 쓴다. 판정·동작은 그대로(문구만)
+  if usb_adb_on; then
+    if [ -e ${NEMDATA:-/data/nemesis}/adb_usb_prev ]; then V_FIRST="먼저 할 일: NEMESIS의 USB ADB를 끄고 재부팅해 주세요."
+    else V_FIRST="먼저 할 일: USB ADB가 켜져 있습니다. USB ADB를 끄고 재부팅해 주세요."; fi
+    V_FIRST_LV=1
+  fi
   # 1.7.4(묶음 C 리뷰 중간 2): 옛 판의 칩 실패 기록이 남은 차(kp_legacy_nochip). D-1(1.7.3 이상만 지원)대로 다시 깨우지 않으므로,
   # 그 상태일 때만 상태 화면에 한 줄을 더 보인다. 판정·동작은 그대로(문구만). 리뷰 반영: 다른 "먼저 할 일"이 있으면 덮지 않는다
-  if [ -z "$V_FIRST" ] && kp_legacy_nochip; then V_FIRST="구 버전의 기록이 남은 차입니다. 삭제 → 재부팅 → 다시 설치해 주세요."; fi
+  if [ -z "$V_FIRST" ] && kp_legacy_nochip; then V_FIRST="구버전의 기록이 남은 차입니다. 삭제 → 재부팅 → 다시 설치해 주세요."; fi
+  # 1.8.0: 변조된 패키지에는 "먼저 할 일"을 붙이지 않는다(판정 문구 하나만)
+  [ "$V_CODE" = tampered ] && { V_FIRST=; V_FIRST_LV=; }
+  # 베타 3(B3-3 b_red): 운행·설정 중 실패인 빨강이면 서비스에 디버그 로그 켜기를 요청한다(목록은 hotspot.sh DBG_RED)
+  [ "$V_LV" = 2 ] && dbg_red "$V_CODE"
   # 1.7.3(U-9): 차주용 요약 3줄
   case "$V_CODE" in
     installing) V_S1="설치: 진행 중" ;;
     reboot|modwait|wificheck) V_S1="설치: 재부팅 필요" ;;
     untested) V_S1="설치: 이 차는 대기 중" ;;
     bootguard) V_S1="설치: HMG-API 훅 꺼짐(부팅 보호)" ;;
-    ready|connected|newconnected|stockoff|wifioff|nowlanrepeat|apoff|oldnemesis|hooksoff) V_S1="설치: 끝남" ;;
+    dongle|ready|connected|newconnected|stockoff|wifioff|nowlanrepeat|apoff|oldnemesis|hooksoff) V_S1="설치: 끝남" ;;
     *) V_S1="설치: 안 됨(위 안내를 보세요)" ;;
   esac
   if [ "$K_OURAP" = yes ]; then V_S2="무선 Wi-Fi: 켜짐"
@@ -1230,9 +1696,9 @@ kp_verdict() {
   elif [ "$V_CODE" = wificheck ] || [ "$V_CODE" = wifioff ]; then V_S2="무선 Wi-Fi: 켜는 중(재부팅 뒤 확인)"
   elif [ "$V_CODE" = wifigone ]; then V_S2="무선 Wi-Fi: 칩이 지금 안 보임(전에는 보임)"
   else V_S2="무선 Wi-Fi: 꺼짐"; fi
-  if [ "${K_CP:-0}" != 0 ]; then V_S3="폰 연결: 카플레이 ${K_CP}대 연결됨"
-  elif [ "$K_AAOK" = yes ]; then V_S3="폰 연결: 안드로이드 오토 연결됨"
-  else V_S3="폰 연결: 지금 연결된 폰 없음"; fi
+  if [ "${K_CP:-0}" != 0 ]; then V_S3="휴대폰 연결: 카플레이 ${K_CP}대 연결됨"
+  elif [ "$K_AAOK" = yes ]; then V_S3="휴대폰 연결: 안드로이드 오토 연결됨"
+  else V_S3="휴대폰 연결: 지금 연결된 휴대폰 없음"; fi
   return 0
 }
 # 리뷰 L-2: plan.txt가 이번 부팅에 쓰였는가(서비스가 이번 부팅 처음 시작할 때 쓰는 svc.start보다 새것이고, svc.start가 이번 부팅 것)
@@ -1282,6 +1748,12 @@ status_kv() {
   echo "stock_seen=$(yesno [ -f $BK/stockap.seen ])"
   echo "wpa=$(yesno running wpa_supplicant)"
   echo "cp_conn=$K_CP"
+  # 1.8.0 X-9: 디버그 로그(앱의 "고급" 토글이 읽음). debug=yes|no 지금 켜기 표시, debug_auto=none|on|wait|done|off
+  dbg_kv
+  # 1.8.0 DG-4: 동글 드라이버 상태(dongle·dongle_lv·dongle_msg). 판정 줄과 따로 둔다
+  dg_kv
+  # 1.8.0 SC-5: 동글 토글(켜짐·누가 정했나·자동 근거)
+  dg_toggle_kv
   # 1.7.0: 설치 진행 상태(run·done·reboot·fail, 없으면 none). 1.7.4(L-9): 무선 안드로이드 오토 켜짐 키(aa)는 뺐다(늘 켜짐)
   _ps=$($BB awk -F= '$1 == "state" { print $2 }' $PROG 2>/dev/null); echo "state=${_ps:-none}"
   # 1.7.0: 이번 부팅에 Wi-Fi 장치(wlan0)가 생기지 않아 핫스팟을 못 켠 기록(hotspot.sh wlan_fail)
@@ -1293,6 +1765,8 @@ status_kv() {
   echo "verdict_msg=$V_MSG"
   echo "verdict_end=$V_END"
   echo "first=$V_FIRST"
+  # 1.8.0: "먼저 할 일"의 수준(앱이 색을 고름). 1 = 주의(노랑, 옛 내비 업데이트 권유). 빈 값 = 앱의 지금 동작 그대로
+  echo "first_lv=$V_FIRST_LV"
   echo "s1=$V_S1"
   echo "s2=$V_S2"
   echo "s3=$V_S3"
@@ -1332,9 +1806,22 @@ make_report() {
   echo "$$ $(cat ${BOOT_ID:-/proc/sys/kernel/random/boot_id} 2>/dev/null)" > $W/collect.pid
   RSTART=$(date +%s)
   if usb_in; then
+    # 1.8.0 PF-4: 제보 만들기는 낮은 우선순위로 돈다(뒤에서 부르는 carreport.sh도 물려받음). renice가 없거나 실패해도 그대로 진행.
+    # 시작 시각은 리포트 부하 칸에 한 줄로 남긴다(그 뒤 perf.log의 부하는 제보 만들기 몫으로 읽게)
+    renice 10 $$ >/dev/null 2>&1
+    RSTART_T=$(date '+%m-%d %H:%M:%S' 2>/dev/null)
+    # 리뷰 중간 2: 도중에 끝나도(TERM·HUP·INT) 임시 파일을 지운다. 끝나면 trap을 되돌린다(감시자는 이어서 돈다)
+    trap '$BB rm -f $LCTMP $DINFO; exit 1' TERM HUP INT
+    $BB rm -f $LCTMP; logcat -d -v time 2>/dev/null > $LCTMP; LC_ON=1
     rprog 5 run "제보 파일을 만드는 중입니다(내비 상태)"
     report 2>/dev/null > $R; $BB chmod 600 $R
+    # 배포판: 비공개 파일의 동글 조사 칸은 logcat을 한 번만 읽게(PF-4) 받아 둔 동안 미리 만든다(600, $W 안, 비공개 파일을 쓰면 지움)
+    $BB rm -f $DINFO; { [ -f $W/cp.log ] || [ -f $DG_ON ] || [ -f $BK/dongle.used ]; } && { dongle_info 2>/dev/null > $DINFO; $BB chmod 600 $DINFO; }
     _collect
+    LC_ON=; $BB rm -f $LCTMP
+    trap - TERM HUP INT
+    # 리뷰 낮음 1: 감시자(--watch)가 만들었으면 감시자 자신이 낮아진 채로 남지 않게 되돌린다(root라 올릴 수 있음)
+    renice 0 $$ >/dev/null 2>&1
   else
     rprog 100 fail "USB가 없습니다. USB를 꽂은 뒤 [제보 파일 만들기]를 다시 눌러 주세요."
   fi
@@ -1343,6 +1830,8 @@ make_report() {
 _collect() {
   rprog 10 run "로그를 모으는 중입니다(서비스·HMG-API 로그)"
   logs 2>/dev/null > $G; $BB chmod 600 $G
+  # 1.8.0 PF-4(리뷰 중간 2): 받아 둔 logcat 원본(폰 이름이 들어갈 수 있음)은 쓰는 곳(report·logs)이 끝나면 바로 지운다
+  LC_ON=; $BB rm -f $LCTMP
   rprog 75 run "USB에 저장하는 중입니다"
   where=""
   for u in $USBS; do
@@ -1350,18 +1839,26 @@ _collect() {
     # 제보 자료는 USB의 한 폴더($RDIR)에 정해진 이름으로 둔다: 1-report.md, 2-car-report.json(carreport.sh), 3-log.txt
     # 예전 제보의 2-car-report.json·4번은 지운다(새 파일과 섞이지 않게)
     # 1.7.1까지 제보 폴더에 두던 4-debug-private.txt도 지운다(1.7.2부터는 $PDIR에 둔다)
-    $BB grep -q " $u " /proc/mounts 2>/dev/null && $BB mkdir -p "$u/$RDIR" && $BB rm -f "$u/$RDIR/2-car-report.json" "$u/$RDIR/4-debug-private.txt" "$u/$PDIR/4-debug-private.txt" \
+    # 베타 3: 옛 위치($PDIR)의 4-debug-private.txt와 지난 5-dongle-private.txt도 지운다(두 곳에 같은 파일이 남지 않게)
+    $BB grep -q " $u " /proc/mounts 2>/dev/null && $BB mkdir -p "$u/$RDIR" && $BB rm -f "$u/$RDIR/2-car-report.json" "$u/$RDIR/4-debug-private.txt" "$u/$PDIR/4-debug-private.txt" "$u/$PDIR/5-dongle-private.txt" \
       && $BB cp $R "$u/$RDIR/1-report.md" 2>/dev/null && $BB cp $G "$u/$RDIR/3-log.txt" 2>/dev/null && sync && where=$u && break
   done
   if [ -z "$where" ]; then
     rprog 100 fail "USB에 저장하지 못했습니다(USB가 빠졌거나 쓸 수 없음). USB를 다시 꽂고 [제보 파일 만들기]를 눌러 주세요."
     return 0
   fi
-  # 1.7.0: 디버그 로그를 켠 차만 4-debug-private.txt(비공개)를 따로 둔다. 1.7.2: 제보 폴더가 아닌 $PDIR에.
+  # 1.7.0: 디버그 로그를 켠 차만 4-debug-private.txt를 둔다. 베타 3(소유자 결정 11-23): 제보 폴더($RDIR)에 함께(디버그 로그가 있을 때만,
+  # 꺼진 차에는 빈 파일을 만들지 않음). 동글 허용 판단 정보·무선 모드 작성자 키는 $PDIR/5-dongle-private.txt에 따로
   if [ -f $W/cp.log ] && echo "x" | $BB awk "$KPMASK" >/dev/null 2>&1; then
     rprog 80 run "디버그 로그를 저장하는 중입니다"
-    $BB mkdir -p "$where/$PDIR" && privlog 2>/dev/null > "$where/$PDIR/4-debug-private.txt"; sync
+    debuglog 2>/dev/null > "$where/$RDIR/4-debug-private.txt"; sync
   fi
+  if [ -f $DG_ON ] || [ -f $BK/dongle.used ] || [ -f $W/cp.log ] || [ "$(mod_key)" = other ]; then
+    $BB mkdir -p "$where/$PDIR" && dgprivlog 2>/dev/null > "$where/$PDIR/5-dongle-private.txt"; sync
+  fi
+  # 비공개 폴더가 비면 지운다(옛 파일만 있던 폴더가 남지 않게)
+  $BB rmdir "$where/$PDIR" 2>/dev/null
+  $BB rm -f $DINFO
   # HMG-API Car Report도 같은 폴더에 저장한다(1분쯤). 1.7.0: 늘 만든다(#41). 결과(완료·실패)는 carreport.sh가 RPROG에 쓴다.
   if command -v hmgapid >/dev/null 2>&1 && [ -f $APP/bin/carreport.sh ]; then
     rprog 85 run "HMG-API Car Report를 만드는 중입니다(약 1분). USB를 빼지 마세요."
@@ -1577,8 +2074,12 @@ if [ "$1" = --watch ]; then
     fi
     # 1.7.3(U-3): 재부팅 요청을 먼저 본다(순정 nemesis 재부팅 메뉴와 같은 명령). 재부팅이 되면 이 셸도 함께 끝난다.
     # 남는 잠금(watch.lock)은 다음 부팅의 감시자가 "지난 부팅 것"으로 보고 지운다. 명령이 돌아오면(실패) 기록하고 계속 감시한다.
+    # 1.8.0: 설정 요청(토글). 감시자는 1초마다 보므로 앱이 바로 답을 받는다(hotspot.sh set_take)
+    [ -f $SETREQ ] && SET_LOG=aplog set_take
     if [ -f $RBREQ ] && take_rbreq; then
       aplog "상태 화면에서 재부팅 요청: 지금 재부팅함(sync 뒤 reboot)"
+      # 시험판 4: 동글 사용이 켜져 있으면 재부팅 직전에 순정 Wi-Fi 저장값을 한 번 더 맞춘다(토글 직후 재부팅해도 다음 부팅에 bcmdhd가 없게)
+      dg_wifi_want && SET_LOG=aplog dg_wifi_sync >/dev/null 2>&1
       # KP_SYNC는 PC 시험용(KP_REBOOT처럼). 차에서는 sync
       ${KP_SYNC:-sync}
       # 재리뷰 L2: 검사와 재부팅 사이(특히 sync가 길 때) 바깥 작업·설치 마무리·제보 만들기가 새로 시작했으면 지금 거절한다
@@ -1590,6 +2091,8 @@ if [ "$1" = --watch ]; then
       # KP_RB_WAIT초(기본 30)만 기다린다. 끝나는 조건: 명령이 끝남 또는 시간. 그 뒤 기록하고 감시를 계속한다.
       # 끝났는지는 하위 셸이 남기는 reboot.rc(종료 코드)로 본다. kill -0은 끝난 자식(좀비)에도 성공해 쓸 수 없다(PC 시험에서 확인).
       rm -f $W/reboot.rc
+      # 시험판 6(F2): 차주가 요청한 재부팅이다(내비가 살아 있음). 이번 부팅 동글 단계 기록에 표시해 다음 부팅이 hang으로 막지 않게(sync)
+      dg_step_rbmark 2>/dev/null
       ( ${KP_REBOOT:-/system/bin/reboot} </dev/null >/dev/null 2>&1; echo $? > $W/reboot.rc ) &
       _rw=0
       while [ ! -s $W/reboot.rc ] && [ $_rw -lt ${KP_RB_WAIT:-30} ]; do sleep 1; _rw=$((_rw+1)); done
@@ -1640,11 +2143,25 @@ if [ "$1" = --report ]; then
   exit 0
 fi
 
+# 시험판 6(F8): 서비스(hotspot.sh dg_status_push)가 동글 단계가 바뀔 때 띄운다. 상태 파일만 다시 쓴다(앱 설치·감시자·제보는 하지 않음).
+# 상태 파일이 없으면(Launch를 한 번도 누르지 않음) 아무것도 하지 않는다. Launch와 임시 파일 이름이 겹치지 않게 .push를 붙인다
+if [ "$1" = --push ]; then
+  [ -f $STATUS ] || exit 0
+  umask 022
+  # 리뷰 중간 4: 임시 파일은 이 프로세스 것($$)만 쓴다. 다 쓴 뒤 같은 폴더에서 mv로 바꿔 앱이 반쯤 쓰인 파일을 읽지 않게 한다
+  _sp=$STATUS.push.$$
+  status_kv 2>/dev/null > $_sp && { $BB awk -F= '$1 != "debug" && $1 != "debug_auto" && $1 != "debug_left" && $1 != "debug_rec" && $1 != "debug_why" && $1 != "debug_src"' $_sp > $_sp.2 && dbg_kv >> $_sp.2 && $BB mv -f $_sp.2 $_sp; } 2>/dev/null; rm -f $_sp.2
+  [ -s $_sp ] && $BB chmod 644 $_sp && $BB mv -f $_sp $STATUS
+  rm -f $_sp
+  exit 0
+fi
 # 1.7.3(K-3): 하위 셸 없이 이 셸에서 쓴다(그래야 끝의 한 줄 요약이 방금 구한 값 K_*를 다시 쓸 수 있다: softap.conf·연결 수·AP 판정을
 # 두 번 구하지 않음). 상태 파일만 644로 만들고 umask는 되돌린다. parse_conf가 위치 인자를 바꾸지만 이 뒤에는 $1을 쓰지 않는다.
 # 리뷰 L-4: 이 셸에서 바로 돈다. status_kv 안에 $(( ))를 넣을 때는 값이 숫자인지 먼저 확인하세요(틀린 산술은 Launch 전체를 끝냄)
 umask 022
-status_kv 2>/dev/null > $STATUS.tmp && $BB chmod 644 $STATUS.tmp && $BB mv -f $STATUS.tmp $STATUS
+# 1.8.0(리뷰 중간 2): 계산하는 몇 초 사이 설정 요청(토글)이 처리됐을 수 있으므로, 옮기기 직전에 디버그 줄 넷을 지금 값으로 다시 쓴다
+status_kv 2>/dev/null > $STATUS.tmp && { $BB awk -F= '$1 != "debug" && $1 != "debug_auto" && $1 != "debug_left" && $1 != "debug_rec" && $1 != "debug_why" && $1 != "debug_src"' $STATUS.tmp > $STATUS.tmp2 && dbg_kv >> $STATUS.tmp2 && $BB mv -f $STATUS.tmp2 $STATUS.tmp; } 2>/dev/null; rm -f $STATUS.tmp2
+[ -s $STATUS.tmp ] && $BB chmod 644 $STATUS.tmp && $BB mv -f $STATUS.tmp $STATUS
 umask 077
 
 # 상태 화면 앱이 없으면(설치 때 실패) 여기서 다시 설치해 본다. 이어서 NEMESIS가 화면을 연다.
@@ -1682,7 +2199,7 @@ fi
 # 1.7.3(K-3): 상태 파일을 쓸 때 구한 값(kp_collect)을 다시 쓴다
 c=$K_CP
 # 1.7.4(소유자 문구, 리뷰 반영): 순정 Wi-Fi 차는 판정 문구와 같은 뜻으로(L-9부터 AA는 늘 켜짐)
-if [ "$K_APMODE" = stock ]; then m="Korea Projection: 무선 카플레이·안드로이드 오토 준비됨, 카플레이 연결 $c개"
+if [ "$K_APMODE" = stock ]; then m="Korea Projection: 무선 프로젝션 준비됨, 카플레이 연결 $c개"
 else
   a=꺼짐; [ "$K_OURAP" = yes ] && a=켜짐
   d=꺼짐; [ "$K_DHCP" = yes ] && d=켜짐
