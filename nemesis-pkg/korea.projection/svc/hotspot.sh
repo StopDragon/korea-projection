@@ -387,7 +387,7 @@ apcfg_get() {
 # $1이 q면 묻기만 하고 기록(로그·$APSRC)은 부르는 쪽이 ap_src_note로 한다(30초 점검이 결과를 보고 정할 때)
 ap_src_apply() {
   FS2=$S2; FS4=$S4; AC_WHY=
-  if [ "$SRC_USED_ALT" != 1 ]; then
+  if [ "$SRC_USED_ALT" != 1 ] && [ ${#S4} = 12 ]; then
     AP_SRC=def
   elif apcfg_get; then
     S2=$AC_S2; S4=$AC_S4; AC_S2=; AC_S4=; AP_SRC=svc
@@ -416,7 +416,7 @@ ap_src_note() {
 # 글자·길이가 틀린 값(badchar·badlen)은 다시 물어도 같아 묻지 않는다. 한 번에 최대 APCFG_WAIT초 걸린다
 AP_RETRY_MAX=${AP_RETRY_MAX:-3}
 ap_src_retry() {
-  [ "$SRC_USED_ALT" = 1 ] && [ "$AP_SRC" = file ] || return 0
+  { [ "$SRC_USED_ALT" = 1 ] || [ ${#FS4} != 12 ]; } && [ "$AP_SRC" = file ] || return 0
   case "$AC_WHY" in timeout|noapp|oldboot|noval) ;; *) return 0 ;; esac
   [ "${AP_RETRY:-0}" -lt $AP_RETRY_MAX ] || return 0
   [ "$(cp_count)" = 0 ] || return 0
@@ -785,6 +785,11 @@ up() {
   # 배포판(DG-3, 소유자 결정): 지원 동글로 확인되기 전에는(바꿔 꽂은 동글 포함) 동글 wlan0에 우리 AP를 띄우지 않는다
   dg_using && ! dg_oui_gate && return 0
   $BB ifconfig $WIF $AP_IP netmask 255.255.255.0 up 2>/dev/null
+  # 무선 AA 방화벽 허용: HMG-API aa_firewall은 순정 AP 대역(192.168.0.0/24)만 열어 우리 AP 대역(192.168.43.0/24)이 막힐 수 있다
+  if ! ${IPTABLES:-iptables} -S INPUT 2>/dev/null | $BB grep -q -- "192\.168\.43\.0/24.*--dport 40515.*-j ACCEPT"; then
+    ${IPTABLES:-iptables} -I INPUT 1 -s 192.168.43.0/24 -d $AP_IP -i $WIF -p tcp --dport 40515 -j ACCEPT 2>/dev/null \
+      && log "무선 안드로이드 오토 방화벽 허용 추가(192.168.43.0/24 -> $AP_IP:40515)"
+  fi
   if ! running "hostapd $CONF"; then
     # 베타 3(B3-3 b_reup): 이 부팅에 우리 hostapd가 한 번 뜬 뒤 다시 띄우는 것만 센다(설정 바뀜·동글 다시 잡힘·죽음 모두 여기로 옴)
     _hpa=; [ -f $W/hapd.any ] && read _hpa < $W/hapd.any 2>/dev/null
