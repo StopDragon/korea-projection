@@ -120,7 +120,7 @@
 
 ### USB Wi-Fi 동글
 
-내비에 Wi-Fi 부품이 없거나 모종의 이유로 Wi-Fi 칩이 켜지지 않는 차는 **USB Wi-Fi 동글로 무선 프로젝션을 쓸 수 있습니다.** 아래 세 동글만 지원합니다.
+내비에 Wi-Fi 부품이 없거나 모종의 이유로 Wi-Fi 칩이 켜지지 않는 차는 **USB Wi-Fi 동글로 무선 프로젝션을 쓸 수 있습니다.** 아래 세 동글만 지원합니다. ipTIME AX900MINI는 지금 테스트 중이라 아직 지원 동글이 아닙니다.
 순서는 의미 없습니다. 아무거나 구입하셔도 무방합니다.
 
 - **1.8.0부터** 씁니다. 상태 화면 "고급"에서 **USB Wi-Fi 동글 사용**을 켜고, 시동을 끈 사이에 동글을 꽂아 둔 채 시동하세요. 동글은 꽂아 두고 쓰면 됩니다.
@@ -131,7 +131,12 @@
 | ipTIME A3000MINI | [link.coupang.com/a/izqnJc9AJg](https://link.coupang.com/a/izqnJc9AJg) |
 | TP-Link Archer T3U | [link.coupang.com/a/izqs0SMtaK](https://link.coupang.com/a/izqs0SMtaK) |
 | 리버네트워크 NEXI NX-AC1300 | [link.coupang.com/a/izq0opYmQe](https://link.coupang.com/a/izq0opYmQe) |
+| ipTIME AX900MINI (🧪 테스트 중) | [link.coupang.com/a/iXNH4MtMXc](https://link.coupang.com/a/iXNH4MtMXc) |
 
+<a href="https://link.coupang.com/a/iXNYt01jtk" target="_blank" referrerpolicy="unsafe-url"><img src="https://image12.coupangcdn.com/image/affiliate/banner/cf9de031daec3c9a00fdcb347efbaea8@2x.jpg" alt="ipTIME 내장안테나, A3000mini, 1세트" width="120" height="240"></a>
+<a href="https://link.coupang.com/a/iXN1dqkVMa" target="_blank" referrerpolicy="unsafe-url"><img src="https://image7.coupangcdn.com/image/affiliate/banner/69b6862cd8ced409fc2fa16ad3f57934@2x.jpg" alt="티피링크 AC1300 미니 MU MIMO USB 무선 랜카드, 1개, Archer T3U" width="120" height="240"></a>
+<a href="https://link.coupang.com/a/iXN7tgiIou" target="_blank" referrerpolicy="unsafe-url"><img src="https://img2c.coupangcdn.com/image/affiliate/banner/b4114151589e2d58e37e4b71dea9654b@2x.jpg" alt="넥시 802.11ac 듀얼밴드 내장안테나 USB 3.0 무선랜카드, NX-AC1300, 1개" width="120" height="240"></a>
+<a href="https://link.coupang.com/a/iXNKblfKgu" target="_blank" referrerpolicy="unsafe-url"><img src="https://image5.coupangcdn.com/image/affiliate/banner/2b7c1942b78b15ba5a47df55c914ebd8@2x.jpg" alt="ipTIME 무선랜카드, 1개, AX900MINI" width="120" height="240"></a>
 
 > 이 링크를 통해 구매하시면, 개발자가 소정의 수수료를 쿠팡에게 제공받습니다. 개발에 큰 도움이 됩니다.
 
