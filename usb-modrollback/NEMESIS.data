@@ -1,0 +1,3 @@
+[nemesis]
+type=execute
+path=NEMESIS.sh

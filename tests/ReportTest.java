@@ -7,6 +7,11 @@ package korea.projection.app;
 public class ReportTest {
     static int fails = 0;
 
+    static int indexOfRow(Report r, String title) {
+        java.util.List<String[]> rs = r.rows();
+        for (int i = 0; i < rs.size(); i++) if (rs.get(i)[0].equals(title)) return i;
+        return -1;
+    }
     static boolean hasRow(java.util.List<String[]> rows, String k, String v) {
         for (String[] r : rows) if (k.equals(r[0]) && v.equals(r[1])) return true;
         return false;
@@ -141,6 +146,10 @@ public class ReportTest {
             && row(Report.parse(NB.replace("usb=saved", "usb=fail")), "제보 파일").startsWith("USB에 쓰지 못함"));
         check("  QR 링크에 support·platform이 들어감", nb.issueUrl().contains("support%3A%20nobb") && nb.issueUrl().contains("platform%3A%20tcc803x"));
         check("  보통 상태 파일은 busybox 없는 내비가 아님(표 15줄 그대로)", !r.nobb() && r.rows().size() == 15);
+        // 1.8.1 W-8: lp= 가 있으면 NEMESIS 줄 바로 다음에 LivePatch 한 줄(문구 그대로), 없으면 15줄 그대로
+        Report lpr = Report.parse(GOOD + "lp=해당 없음\n");
+        check("1.8.1 W-8: lp=가 있으면 표에 'NEMESIS LivePatch' 줄(문구 그대로, NEMESIS 다음), 16줄", lpr.rows().size() == 16 && "해당 없음".equals(row(lpr, "NEMESIS LivePatch"))
+            && "NEMESIS".equals(lpr.rows().get(indexOfRow(lpr, "NEMESIS LivePatch") - 1)[0]));
 
         // 1.6.2: 순정 카플레이 AP(K3 #15: our_ap=no, our_dhcp는 오판이 고쳐져 no, other_ap=yes)
         String STOCK = GOOD.replace("our_ap=yes", "our_ap=no").replace("our_dhcp=yes", "our_dhcp=no").replace("other_ap=no", "other_ap=yes")

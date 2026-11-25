@@ -1,7 +1,7 @@
 {
   "id": "wireless-carplay-aa",
   "name": "Korea Projection: Wireless CarPlay + Android Auto",
-  "version": "2.4.9",
+  "version": "2.4.10",
   "hmgapi": ">=1.0.0",
   "authors": [
     "VysseCodes"

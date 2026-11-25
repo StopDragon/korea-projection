@@ -12,6 +12,8 @@ BK=/data/nemesis/backup/korea.projection
 HOTSPOT_LIB=1 . /data/nemesis/apps/korea.projection/svc/hotspot.sh
 # 쓸 수 있는 busybox가 없는 내비는 우리 hostapd를 켠 적이 없다: 오류 줄만 나오므로 건너뛴다
 has_bb && stop_all
+# 1.8.1 I-1: 우리 방화벽 체인(KP_AA_IN)을 뺀다. busybox가 없어도(위 stop_all을 건너뛴 차) -D·-F·-X만 쓰므로 부른다(업데이트 때도: 새 판이 다시 넣음)
+fw_aa_down
 # 베타 3(리뷰 L3): 디버그 로그 파이프(logcat|grep|awk)도 멈춘다(지운 $W에 재부팅 전까지 계속 쓰지 않게). 이번 부팅 것만(killlog가 부팅 id를 봄)
 has_bb && killlog
 # 1.8.0 정식(P3·P4): AA 로그를 계속 받던 logcat도 멈춘다(busybox가 없어도: read·kill만 씀, 이번 부팅·이름이 logcat일 때만)
@@ -130,6 +132,14 @@ wifi_unlock && echo "Wi-Fi 잠금 되돌림"
 dg_wifi_sync restore || modmsg="$modmsg 순정 Wi-Fi 설정을 되돌리지 못했습니다. 무선 카플레이가 안 되면 내비 Wi-Fi를 한 번 켜 주세요."
 # 1이 아니면 꺼져 있던 것으로 본다(한 번도 안 켠 차는 null일 수 있다). 기록이 없으면 건드리지 않는다.
 [ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" != 1 ] && svc wifi disable
+# 1.8.1 W-3: 설치 전에 값이 아예 없던 차(기록이 글자 그대로 null)는 지운 뒤에도 없음으로 되돌린다(settings delete).
+# 빈 기록(설치 때 읽지 못함)은 모름이라 위 동작만 한다. delete가 없는 내비(옛 settings 명령)이거나 지우지 못하면 0으로 둔다
+# (없음과 0은 순정이 같게 읽는다: Wi-Fi 꺼짐). 위 svc wifi disable이 늦게 0을 쓸 수 있어 결과가 0이어도 같은 뜻이다. 실패해도 삭제는 이어 간다
+if [ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" = null ]; then
+  settings delete global wifi_on >/dev/null 2>&1
+  if [ "$(settings get global wifi_on 2>/dev/null)" = null ]; then echo "Wi-Fi 설정(wifi_on)을 설치 전처럼 없음으로 되돌림"
+  else settings put global wifi_on 0 >/dev/null 2>&1; fi
+fi
 # Wi-Fi 서비스가 있는 차(1.5.4)는 서비스가 Wi-Fi를 꺼 wifi_on이 0으로 바뀌었을 수 있다. 설치 전에 켜져 있었으면
 # 값만 1로 되돌린다(지금 켜지는 않는다: 껐다 켜면 USB·블루투스가 다시 시작됨). 재부팅하면 원래대로 켜진다.
 if [ -f $BK/wifi_on ] && [ "$(cat $BK/wifi_on 2>/dev/null)" = 1 ] && [ "$(settings get global wifi_on 2>/dev/null)" != 1 ]; then

@@ -667,6 +667,9 @@ final class Report {
         String h = get("hooks");
         out.add(new String[] { "HMG-API 훅", "on".equals(h) ? "켜짐" : "off".equals(h) ? "꺼짐 (" + (get("hookmap").isEmpty() ? "?" : get("hookmap")) + ", 마지막 부팅 기록)" : "-" });
         out.add(new String[] { "NEMESIS", ver(get("nemesis"), MIN_NEMESIS) });
+        // 1.8.1 W-8: NEMESIS LivePatch 한 줄(서비스가 시작할 때 읽어 상태 파일 lp=에 둔 문구 그대로). 옛 상태 파일(lp 없음)은 줄을 더하지 않음
+        String lp = get("lp").trim();
+        if (!lp.isEmpty()) out.add(new String[] { "NEMESIS LivePatch", lp });
         out.add(new String[] { "무선 카플레이 기능", yn("feat_carplay") });
         // 1.7.4(L-9): USB 파일로 무선 AA를 끄는 기능을 없애 켜짐·꺼짐 표시를 뺐다(늘 켜짐). 줄 수는 그대로 둔다
         out.add(new String[] { "무선 안드로이드 오토 기능", yn("feat_aa") });

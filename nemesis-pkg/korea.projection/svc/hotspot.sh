@@ -143,7 +143,8 @@ chip_fail_evidence() {
 # 1.8.0 베타 3(11-24 소유자 결정): README ✅ 2종(NQ5 #484 스포티지 2022 가솔린·SP2PE #518 셀토스 2023 PE)을 더했다(55종). 판 260902는 이슈 글에서 읽음.
 # 1.8.0 정식(11-24 메인): README ✅ LX2PE(#554 더 뉴 팰리세이드, 동글로 무선 AA)를 더했다(56종). 판 260902는 리포트에서 읽음.
 # 1.8.0 정식(11-24 메인): README ✅ TAMPE(#306 레이 2023, 동글로 무선 카플레이)를 더했다(57종).
-CARS_SEEN='IGPE.KOR.*.260902 IGPE21.KOR.*.260902 IGPEHEV.KOR.*.260902 DN822HEV.KOR.*.260902 JSN.KOR.*.260902 LX2.KOR.*.260902 CN7.KOR.*.260902 CN7HEV.KOR.*.260902 TMFL.KOR.*.260902 AX1.KOR.*.260902 DN8.KOR.*.260902 NX4HEV.KOR.*.260902 NX4.KOR.*.260902 DEPEHEV.KOR.*.260902 DEPEPHEV.KOR.*.260902 SG2EV.KOR.*.260902 DL3HEV.KOR.*.260902 DL3HEV22.KOR.*.260902 YGPE.KOR.*.260902 YGPEHEV.KOR.*.260902 MQ422HEV.KOR.*.260902 MQ422.KOR.*.260902 MQ4HEV.KOR.*.260902 BDPE.KOR.* GL3HEV.KOR.*.260902 OSEV.KOR.*.260902 CKPE.KOR.*.260902 SK3EV.KOR.*.260902 SP221.KOR.*.260902 IKFL.KOR.*.260902 DL322.KOR.*.260902 KA422.KOR.*.260902 CVEV.KOR.*.260902 TAM22.KOR.*.260604 CKPE22.KOR.*.260902 CN7N.KOR.*.260902 DE22EV.KOR.*.260902 HM21.KOR.*.260902 KA4.KOR.*.260902 MQ4.KOR.*.260902 NEEV.KOR.*.260902 SG2HEV.KOR.*.260902 SP222.KOR.*.260902 DL3.KOR.*.260902 GL3.KOR.*.260902 IGPE21HEV.KOR.*.260902 NQ5HEV.KOR.*.260902 DN8HEV.KOR.*.260902 OSHEV.KOR.*.260902 CN7HEV22.KOR.*.260902 HREV22.KOR.*.260902 DE_E_22.KOR.*.260902 TMHEV.KOR.*.260902 NQ5.KOR.*.260902 SP2PE.KOR.*.260902 LX2PE.KOR.*.260902 TAMPE.KOR.*.260902'
+# 1.8.1(11-25 메인): README ✅ 4종(AEPEHEV #303·CN7HEVPE #520·CN7PE #519·HREV24 #230)을 더했다(61종). AEPEHEV는 내비 V038 260404에서 확인됨.
+CARS_SEEN='IGPE.KOR.*.260902 IGPE21.KOR.*.260902 IGPEHEV.KOR.*.260902 DN822HEV.KOR.*.260902 JSN.KOR.*.260902 LX2.KOR.*.260902 CN7.KOR.*.260902 CN7HEV.KOR.*.260902 TMFL.KOR.*.260902 AX1.KOR.*.260902 DN8.KOR.*.260902 NX4HEV.KOR.*.260902 NX4.KOR.*.260902 DEPEHEV.KOR.*.260902 DEPEPHEV.KOR.*.260902 SG2EV.KOR.*.260902 DL3HEV.KOR.*.260902 DL3HEV22.KOR.*.260902 YGPE.KOR.*.260902 YGPEHEV.KOR.*.260902 MQ422HEV.KOR.*.260902 MQ422.KOR.*.260902 MQ4HEV.KOR.*.260902 BDPE.KOR.* GL3HEV.KOR.*.260902 OSEV.KOR.*.260902 CKPE.KOR.*.260902 SK3EV.KOR.*.260902 SP221.KOR.*.260902 IKFL.KOR.*.260902 DL322.KOR.*.260902 KA422.KOR.*.260902 CVEV.KOR.*.260902 TAM22.KOR.*.260604 CKPE22.KOR.*.260902 CN7N.KOR.*.260902 DE22EV.KOR.*.260902 HM21.KOR.*.260902 KA4.KOR.*.260902 MQ4.KOR.*.260902 NEEV.KOR.*.260902 SG2HEV.KOR.*.260902 SP222.KOR.*.260902 DL3.KOR.*.260902 GL3.KOR.*.260902 IGPE21HEV.KOR.*.260902 NQ5HEV.KOR.*.260902 DN8HEV.KOR.*.260902 OSHEV.KOR.*.260902 CN7HEV22.KOR.*.260902 HREV22.KOR.*.260902 DE_E_22.KOR.*.260902 TMHEV.KOR.*.260902 NQ5.KOR.*.260902 SP2PE.KOR.*.260902 LX2PE.KOR.*.260902 TAMPE.KOR.*.260902 AEPEHEV.KOR.*.260404 CN7HEVPE.KOR.*.260902 CN7PE.KOR.*.260902 HREV24.KOR.*.260902'
 # 1.7.3(G-4): 차종 코드만 같고 내비 버전(펌웨어 끝 6자리 날짜)이 다를 때를 보려고, 버전을 빼고 차종 코드만 본다
 # 1.7.4(B-5): 그 차종이 확인된 내비 버전(목록 끝 6자리)을 _CMD에 둔다. 레이 TAM22는 260604에서 확인돼 260902가 기준이 아니다.
 # 버전 없이 적힌 차종(BDPE.KOR.*)은 빈 값. 하위 셸 없이 값만 넣는다
@@ -311,7 +312,10 @@ CONFEOF
 
 # --- 1.8.0 정식 C4(소유자 승인 11-24): 대체 위치(/securedata) 차는 Wi-Fi 서비스 값을 먼저 쓴다 ---
 # 근거(beta3-reports 2-4절): /securedata 두 차는 파일 비밀번호가 32자, 서비스(WifiManager.getWifiApConfiguration) 값이 10·12자였고
-# 둘 다 휴대폰이 붙지 않았다. 아이폰은 서비스 값을 받는다(stock-re 3.4). 기본 위치 차(니로 등)는 이 길을 타지 않는다(broadcast도 없음).
+# 둘 다 휴대폰이 붙지 않았다. 아이폰은 서비스 값을 받는다(stock-re 3.4).
+# 1.8.1 I-2(#615 CN7NPE: 기본 위치, 파일 비밀번호 32자·서비스 12자, 아이폰 접속 3번·키 교환 0번): 기본 위치 차(니로 등)도 묻는다.
+# 서비스 값을 받았고 파일 값과 다르면 서비스 값을 쓰고, 같으면 예전처럼 def(파일, 기본 위치)다. 못 받으면 파일 값 그대로(file)이고 30초 점검에서 다시 묻는다.
+# 리뷰 1 L3: 기본 위치 차는 시작 때 기다리지 않는다. 파일 값으로 바로 띄우고 첫 30초 점검에서 묻는다(같으면 그대로, 다르면 그때 다시 띄움).
 # 흐름: 남은 파일 지움 → 앱 receiver(명시적 컴포넌트, 화면 없음)에 broadcast 한 번 → 최대 APCFG_WAIT초 동안 1초마다 apcfg.val 확인 →
 # 같은 부팅 id만 → busybox awk로 16진을 되돌리며 0x20~0x7e, SSID 1~32자, 비밀번호 8~63자 확인 → 읽은 즉시 지움.
 # 실패하면 파일 값을 그대로 쓴다(베타 3와 같은 동작). 값은 셸 변수로만 들고 eval하지 않는다.
@@ -382,19 +386,32 @@ apcfg_get() {
   AC_S2=; AC_S4=; return 1
 }
 # write_conf 앞에서 부른다(main 시작, 30초 점검에서 파일 값이 실제로 바뀌었을 때). 파일에서 읽은 S2·S4는 FS2·FS4로 기억하고
-# (30초 점검은 파일 값끼리 비교), 대체 위치 차이고 서비스 값을 받으면 S2·S4를 그 값으로 바꾼다.
+# (30초 점검은 파일 값끼리 비교), 서비스 값을 받으면 S2·S4를 그 값으로 바꾼다(1.8.1 I-2: 기본 위치 차는 파일 값과 다를 때만, 같으면 def).
 # 상태 파일 $APSRC 한 줄: "<부팅 id> <svc|file|def> <이유 또는 -> <SSID 길이> <비밀번호 길이> <파일 비밀번호 길이>"(값 없음)
 # $1이 q면 묻기만 하고 기록(로그·$APSRC)은 부르는 쪽이 ap_src_note로 한다(30초 점검이 결과를 보고 정할 때)
 ap_src_apply() {
   FS2=$S2; FS4=$S4; AC_WHY=
-  if [ "$SRC_USED_ALT" != 1 ]; then
-    AP_SRC=def
+  # 리뷰 1 L3: 기본 위치 차(니로 등)는 서비스 시작 때 묻지 않는다(앱 응답을 기다리느라 핫스팟이 늦게 뜨지 않게). 파일 값으로 바로 띄우고
+  # 첫 30초 점검(ap_src_retry)에서 한 번 묻는다. 값이 같으면 아무것도 바꾸지 않고, 다르면(#615 꼴) 그때 우리 hostapd만 다시 띄운다
+  if [ "$SRC_USED_ALT" != 1 ] && [ "$1" != q ]; then
+    AP_SRC=def; DEF_ASK=1
   elif apcfg_get; then
-    S2=$AC_S2; S4=$AC_S4; AC_S2=; AC_S4=; AP_SRC=svc
+    ap_src_take
   else
     AP_SRC=file
   fi
   [ "$1" = q ] || ap_src_note
+  return 0
+}
+# 1.8.1 I-2: 받은 서비스 값(AC_S2·AC_S4)을 쓸지 정한다. 대체 위치 차는 늘 서비스 값(1.8.0 C4 그대로), 기본 위치 차는 파일 값과 다를 때만.
+# 같으면 AP_SRC=def(파일 값이 곧 서비스 값). AC_S2·AC_S4·AC_WHY는 지운다
+ap_src_take() {
+  if [ "$SRC_USED_ALT" = 1 ] || [ "$AC_S2" != "$S2" ] || [ "$AC_S4" != "$S4" ]; then
+    S2=$AC_S2; S4=$AC_S4; AP_SRC=svc
+  else
+    AP_SRC=def
+  fi
+  AC_S2=; AC_S4=; AC_WHY=
   return 0
 }
 # 상태 파일 한 줄만(값 없음)
@@ -408,28 +425,46 @@ ap_src_note() {
   case "$AP_SRC" in
     svc) log "AP 값 출처: 서비스(SSID ${#S2}자·비밀번호 ${#S4}자)$1" ;;
     file) log "AP 값 출처: 파일($AC_WHY)$1" ;;
+    # 1.8.1 I-2: 기본 위치 차는 다시 물어 받았을 때만 한 줄(시작 때 같은 값이면 예전처럼 로그 없음)
+    def) [ -n "$1" ] && log "AP 값 출처: 파일(기본 위치, 서비스 값과 같음)$1" ;;
   esac
   ap_src_file
 }
-# 정식 2차 리뷰 M1: 서비스 시작 때 앱이 답하지 않아(timeout·noapp·oldboot·noval) 파일 값으로 띄운 대체 위치 차는 30초 점검에서
-# AP_RETRY_MAX번까지 다시 묻는다. 받으면 그 값으로 hostapd를 다시 띄운다. 카플레이가 연결되어 있으면(지금 값으로 붙음) 미룬다.
+# 정식 2차 리뷰 M1: 서비스 시작 때 앱이 답하지 않아(timeout·noapp·oldboot·noval) 파일 값으로 띄운 차는 30초 점검에서
+# AP_RETRY_MAX번까지 다시 묻는다(1.8.1 I-2: 기본 위치 차도). 받으면 그 값으로 hostapd를 다시 띄운다(기본 위치 차는 파일 값과 다를 때만).
+# 카플레이가 연결되어 있거나 무선 AA가 연결되어 있으면(HA=ok, 지금 값으로 붙음) 미룬다.
 # 글자·길이가 틀린 값(badchar·badlen)은 다시 물어도 같아 묻지 않는다. 한 번에 최대 APCFG_WAIT초 걸린다
 AP_RETRY_MAX=${AP_RETRY_MAX:-3}
 ap_src_retry() {
-  [ "$SRC_USED_ALT" = 1 ] && [ "$AP_SRC" = file ] || return 0
-  case "$AC_WHY" in timeout|noapp|oldboot|noval) ;; *) return 0 ;; esac
+  if [ "$DEF_ASK" != 1 ]; then
+    [ "$AP_SRC" = file ] || return 0
+    case "$AC_WHY" in timeout|noapp|oldboot|noval) ;; *) return 0 ;; esac
+  fi
   [ "${AP_RETRY:-0}" -lt $AP_RETRY_MAX ] || return 0
   [ "$(cp_count)" = 0 ] || return 0
+  [ "$HA" = ok ] && return 0
+  # 리뷰 1 L4: 우리 AP에 붙은 기기가 있으면(AA가 TCP 전이거나 방화벽에 막혀 HA가 ok가 아니어도) 지금 값으로 붙어 있으니 미룬다
+  [ "${WSTA:-0}" -gt 0 ] && return 0
+  if [ "$DEF_ASK" = 1 ]; then
+    # 기본 위치 차의 첫 묻기(횟수는 세지 않음). 같으면 조용히 def, 다르면 아래와 같이 다시 띄움, 못 받으면 file로 두고 그 뒤로는 다시 묻기 규칙대로
+    DEF_ASK=
+    if ! apcfg_get; then AP_SRC=file; log "AP 값 서비스 묻기(기본 위치): 받지 못함($AC_WHY), 파일 값 그대로"; ap_src_file; return 0; fi
+    if [ "$AC_S2" = "$S2" ] && [ "$AC_S4" = "$S4" ]; then ap_src_take; ap_src_file; return 0; fi
+    ap_src_take
+    ap_src_note " — 기본 위치 파일 값과 달라 핫스팟을 서비스 값으로 다시 시작"
+    write_conf
+    restart_hostapd
+    return 0
+  fi
   AP_RETRY=$((${AP_RETRY:-0} + 1))
   if ! apcfg_get; then
     log "AP 값 서비스 다시 묻기 ${AP_RETRY}/${AP_RETRY_MAX}번: 받지 못함($AC_WHY), 파일 값 그대로"
     ap_src_file; return 0
   fi
-  AP_SRC=svc
   if [ "$AC_S2" = "$S2" ] && [ "$AC_S4" = "$S4" ]; then
-    AC_S2=; AC_S4=; AC_WHY=; ap_src_note " — 다시 물어 받음, 파일 값과 같아 핫스팟은 그대로"; return 0
+    ap_src_take; ap_src_note " — 다시 물어 받음, 파일 값과 같아 핫스팟은 그대로"; return 0
   fi
-  S2=$AC_S2; S4=$AC_S4; AC_S2=; AC_S4=; AC_WHY=
+  ap_src_take
   ap_src_note " — 다시 물어 받음(${AP_RETRY}번째), 핫스팟을 새 값으로 다시 시작"
   write_conf
   restart_hostapd
@@ -918,8 +953,63 @@ stop_ours() {
 }
 stop_ap() {
   aa_sig 0 stop
+  fw_aa_down
   stop_ours
   killlog
+}
+# --- 1.8.1 I-1(소유자 승인 11-25: "패키지는 iptables를 읽기만" 원칙을 좁혀 바꿈, 설계 drafts/1.8.1-work/design-i1-i3.md 1장) ---
+# 순정 방화벽 차(INPUT 정책 DROP, #520 CN7HEVPE·#522 CEEV 등)는 우리 AP(192.168.43.x)로 오는 무선 AA(TCP 40515) 첫 SYN을 버린다.
+# 무선 모드 2.4.9의 규칙은 HMG-API 엔진이 순정 AP 대역(192.168.0.0/24)에만 걸어 우리 대역에 맞지 않는다.
+# 그래서 우리 AP가 떠 있고 AA 신호가 1인 동안만 우리 체인 하나(KP_AA_IN, ACCEPT 한 줄)를 두고 INPUT 맨 앞에서 그리로 보낸다.
+# - 체인 안에는 -j ACCEPT 줄만 둔다: HMG-API 네트워크 관리자(state/net.sh)는 자기 점프 앞의 "막지 않는 줄"(ACCEPT만 든 체인 점프)을
+#   그대로 두므로 다투지 않는다. HMGAPI_IN·순정 체인(WL_WLAN0_IN)은 건드리지 않는다.
+# - 방화벽 없는 차(INPUT 정책 DROP이 아님)는 넣지 않는다(니로 등은 iptables 읽기 한 번만 는다). 순정 방화벽을 다시 읽는 중
+#   (init.svc.iptrules running·restarting)이면 그 회차는 건너뛴다. IPv4만(ip6tables·카플레이 규칙은 그대로).
+# - 있는지는 -S 출력을 필드로 본다(-d …/32, -m tcp, --syn → --tcp-flags … SYN 꼴). 점프는 자리 말고 있는지만 본다.
+# - 빼기는 조건 없이, awk 없이 -D(5번까지)·-F·-X만 쓴다(busybox 없는 삭제 길에서도 부를 수 있게). 재부팅하면 규칙은 어차피 사라진다.
+IPTABLES=${IPTABLES:-iptables}
+FWAA_CH=KP_AA_IN
+fw_aa_down() {
+  _fwd=0
+  while [ $_fwd -lt 5 ] && $IPTABLES -D INPUT -i $WIF -j $FWAA_CH 2>/dev/null; do _fwd=$((_fwd + 1)); done
+  if $IPTABLES -F $FWAA_CH 2>/dev/null; then
+    # 리뷰 1 L8: 다른 인터페이스 이름으로 남은 점프가 있으면 -X가 실패한다(빈 체인·점프만 남음, 패킷에는 영향 없음, 재부팅하면 사라짐)
+    if $IPTABLES -X $FWAA_CH 2>/dev/null; then log "AA 방화벽 규칙 뺌(우리 체인)"
+    else log "AA 방화벽 규칙을 비웠지만 체인을 지우지 못함(다른 점프가 남음, 재부팅하면 사라짐)"; fi
+  elif [ $_fwd -gt 0 ]; then log "AA 방화벽 규칙 뺌(점프만 남아 있었음)"; fi
+  FWAA_ON=
+  return 0
+}
+# aa_sig 바로 뒤에 부른다. AA 신호가 켜진 때($AAWHY = on: 우리 hostapd 돎·wlan0에 우리 주소·순정 AP 기록 없음)만 넣거나 맞추고, 아니면 뺀다
+fw_aa_sync() {
+  [ "$(cat $AAWHY 2>/dev/null)" = on ] || { [ -n "$FWAA_ON" ] && fw_aa_down; return 0; }
+  case "$(getprop init.svc.iptrules 2>/dev/null)" in running|restarting) return 0 ;; esac
+  # d: INPUT 정책 DROP, c: 우리 체인 있음, j: INPUT에서 우리 체인으로 가는 점프 있음, r: 체인 안이 맞는 규칙 한 줄뿐
+  _fws=$($IPTABLES -S 2>/dev/null | $BB awk -v ch=$FWAA_CH -v ifn=$WIF '
+    $1 == "-P" && $2 == "INPUT" && $3 == "DROP" { d = 1 }
+    $1 == "-N" && $2 == ch { c = 1 }
+    $1 == "-A" && $2 == "INPUT" && $(NF - 1) == "-j" && $NF == ch && index($0, " -i " ifn " ") > 0 { j = 1 }
+    $1 == "-A" && $2 == ch { n++
+      if ($0 ~ / -s 192\.168\.43\.0\/24 / && $0 ~ / -d 192\.168\.43\.1(\/32)? / && $0 ~ / -p tcp / && $0 ~ / --dport 40515 / && $0 ~ / --tcp-flags [A-Z,]+ SYN / && $0 ~ / -j ACCEPT$/) r++ }
+    END { print (d ? "d" : "-") (c ? "c" : "-") (j ? "j" : "-") ((n == 1 && r == 1) ? "r" : "-") }' 2>/dev/null)
+  case "$_fws" in
+    dcjr) FWAA_ON=1; return 0 ;;
+    d???) ;;
+    # 방화벽 없는 차: 넣지 않는다. 지난 실행이 남긴 것이 있으면 뺀다
+    -c??|--j?) fw_aa_down; return 0 ;;
+    *) return 0 ;;
+  esac
+  _fwf=0
+  case "$_fws" in ?c??) ;; *) $IPTABLES -N $FWAA_CH 2>/dev/null || _fwf=1 ;; esac
+  case "$_fws" in ???r) ;; *)
+    $IPTABLES -F $FWAA_CH 2>/dev/null
+    $IPTABLES -A $FWAA_CH -s 192.168.43.0/24 -d $AP_IP -p tcp --syn --dport 40515 -j ACCEPT 2>/dev/null || _fwf=1 ;;
+  esac
+  case "$_fws" in ??j?) ;; *) $IPTABLES -I INPUT 1 -i $WIF -j $FWAA_CH 2>/dev/null || _fwf=1 ;; esac
+  if [ $_fwf = 1 ]; then log_cap FWAA_FAIL "AA 방화벽 규칙을 넣지 못함(다음 점검에 다시)" "AA 방화벽 규칙 넣기 실패가 이어짐"
+  elif [ -z "$FWAA_SEEN" ]; then FWAA_SEEN=1; FWAA_ON=1; log "AA 방화벽 규칙 넣음(우리 AP 대역의 무선 AA 포트만, 순정 방화벽 차)"
+  else FWAA_ON=1; log_cap FWAA_RE "AA 방화벽 규칙 다시 넣음(순정 방화벽이 다시 읽혀 지워졌을 수 있음)" "AA 방화벽 규칙을 자꾸 다시 넣음"; fi
+  return 0
 }
 # AA 신호를 맞춘다. 인자가 있으면 그 값(0)으로, 없으면 우리 hostapd·wlan0 주소·순정 AP 기록으로 정한다.
 # 바뀔 때만 setprop·로그. 값만 쓰고 SSID·비밀번호는 쓰지 않는다. 순정 AP 경로(tcc803x)는 이 함수를 부르지 않는다(순정이 이미 AP를 안다).
@@ -1022,6 +1112,8 @@ aa_flag() {
       if [ -n "$HI" ]; then HI=; HI_T=; HI_U=; log "안내(상태 화면) 지움: 아이폰 유선 연결"; hint_write; fi
       return 0 ;;
     usboff) IPH_USB=; return 0 ;;
+    # 1.8.1 S-3: 이번 점검에 화면 시간 초과가 있었음(perf_tick이 그 회차 줄에 붙이고 지움)
+    scrto) PF_SCRTO=1; return 0 ;;
     # 베타 3(B3-3 b_audio): 10분 안 DBG_AU_N줄, 또는 한 줄의 N이 DBG_AU_1 이상
     glitch) case "$2" in ''|*[!0-9]*) return 0 ;; esac
       [ "$2" -ge $DBG_AU_1 ] && dbg_trig b b_audio
@@ -1035,6 +1127,8 @@ aa_flag() {
     cpwait) aa_hint cpwait ;;
     ok) aa_hint ok ;;
     clr) case "$HA" in bt|cpwait) aa_hint "" "AP 켜짐 확인" ;; esac ;;
+    # 1.8.1 I-9: 휴대폰 Wi-Fi 접속(TCP 전)은 기다림 안내만 지운다(연결됨은 TCP 뒤 ok)
+    wjoin) case "$HA" in bt|cpwait) aa_hint "" "휴대폰 Wi-Fi 접속(TCP 전)" ;; esac ;;
   esac
   return 0
 }
@@ -1107,6 +1201,8 @@ ap_yield() {
   if ! car_in "$prod" "$CARS_OK" && stock_ap_on; then
     # 1.7.0: 다른 hostapd가 도는 동안은 우리 AP가 아니므로 AA 신호를 끈다(리뷰 M1, 바뀔 때만 setprop)
     aa_sig 0 yield
+    # 1.8.1 I-1(설계 리뷰 1): 비키는 동안은 우리 AP가 아니므로 우리 방화벽 규칙도 뺀다(stop_ours만 부르는 갈래가 있음)
+    [ -n "$FWAA_ON" ] && fw_aa_down
     # 1.6.2: 순정이 카플레이 AP를 띄웠으면 우리 것을 멈추고 순정 AP 경로로 간다(돌아오지 않음)
     if [ "$(stock_ssid)" = carplay ]; then
       stop_ap; rm -f $W/ap.yield
@@ -1503,7 +1599,7 @@ aa_events() {
     fi
   fi
   aa_src | $BB grep -E ' [VDIWEF]/(AAProjection|PhoneProjection|HMG-API|TccCarPlay|CarPlay_) *\(' \
-    | $BB grep -E 'START_SPP_CONNECT_FOR_CONNECTIVITY|Sent WifiVersionRequest|wirelessSupported = |getWiFiApMode|isWifiApEnable = |Sent start request|MSG_WIFI_TRANSPORT_INIT retu|ACTION_WIRELESS_SPP_CONNECT_TIMEOUT|==> rfcommDisconnect|Already AA|isCheckReady ret = false|onSppConnect.. ret = false|connectivityConnectionTimeout|isConnectivityActivated return true|Connection status STATUS_|WifiTransport : .*onConnected|retry Wireless connection|canStartConnection = false|getWirelessConnection = false|bridge: iAP2 (dis)?connected comp=[14]|send requestWLDeviceReadyStatusUpdate|requestWLDeviceReadyStatusUpdate \[|PP Service is Running|onBTCMSppStatusChanged|AA 준비 다시 보냄|ready resend hook in |AA: timer error |glitches in the last|Lost packets|Unrecovered packets|Buffering issues|Jitter Buffer Discard|Main audio setting up|AirPlay session ended|[)]: (Glitches|Retransmits|Packets|Time Sync):|Modes changed: screen |DipoService ] (takeScreen|untakeScreen|onScreenStarted|onScreenStopped|onActivityResume|onActivityPause)|_ScreenTearDown.. : wait done|Screen stream (started|stopped)|_SetUpStreams|DipoActivity ] on(Pause|Resume) setPPFullscreenMode|getKeyAction.*= |dispatchKeyEvent.. ACTION_DOWN keyCode|untakeScreen Invalid|onVideoFocusModeChange|VideoFocusHandler VIDEO_FOCUS_|GalReceiverService : SURFACE_VIEW_|MainActivity : on(Start|Stop|Resume|Pause)$|VideoSink : init' \
+    | $BB grep -E 'START_SPP_CONNECT_FOR_CONNECTIVITY|Sent WifiVersionRequest|wirelessSupported = |getWiFiApMode|isWifiApEnable = |Sent start request|MSG_WIFI_TRANSPORT_INIT retu|ACTION_WIRELESS_SPP_CONNECT_TIMEOUT|==> rfcommDisconnect|Already AA|isCheckReady ret = false|onSppConnect.. ret = false|connectivityConnectionTimeout|isConnectivityActivated return true|Connection status STATUS_|WifiTransport : .*onConnected|retry Wireless connection|canStartConnection = false|getWirelessConnection = false|bridge: iAP2 (dis)?connected comp=[14]|send requestWLDeviceReadyStatusUpdate|requestWLDeviceReadyStatusUpdate \[|PP Service is Running|onBTCMSppStatusChanged|AA 준비 다시 보냄|ready resend hook in |AA: timer error |glitches in the last|Lost packets|Unrecovered packets|Buffering issues|Jitter Buffer Discard|Main audio setting up|AirPlay session ended|[)]: (Glitches|Retransmits|Packets|Time Sync):|Modes changed: screen |DipoService ] (takeScreen|untakeScreen|onScreenStarted|onScreenStopped|onActivityResume|onActivityPause)|_ScreenTearDown.. : wait done|Screen stream (started|stopped)|screen stream timeout|CarPlaySessionScreenTimeout|DipoService ] onScreenTimeout|Sender went dead|isPopupType = |WirelessPhoneProjectionReceiver Action is: |displayInitPopup mAgreeScreen = |isAgreementScreen[(][)] = true|deviceID is null|_SetUpStreams|DipoActivity ] on(Pause|Resume) setPPFullscreenMode|getKeyAction.*= |dispatchKeyEvent.. ACTION_DOWN keyCode|untakeScreen Invalid|onVideoFocusModeChange|VideoFocusHandler VIDEO_FOCUS_|GalReceiverService : SURFACE_VIEW_|MainActivity : on(Start|Stop|Resume|Pause)$|VideoSink : init' \
     | $BB awk -v last="$_last" -v max="$AAEV_MAX" -v smax="$SCRMAX" -v on="$AA_ON_TM" -v now="${_ns:-0}" '
     # 찾는 글이 없으면 빈 값(줄 앞의 시각을 값으로 잘라 오지 않게, 리뷰 M2)
     function after(s,   i) { i = index($0, s); if (i == 0) return ""; return substr($0, i + length(s)) }
@@ -1530,7 +1626,20 @@ aa_events() {
       if (index($0, "DipoService ] onActivityResume() takeScreen force") > 0) return "카플레이 화면으로 돌아와 화면 가져옴(takeScreen force)"
       if ($0 ~ /DipoService ] untakeScreen[(][)] *$/) return "내비가 화면 돌려줌(untakeScreen)"
       if (index($0, "DipoService ] onScreenStarted()") > 0) return "화면 시작(onScreenStarted)"
+      # 1.8.1 I-5(#306 08:11:01): 순정이 영상 시간 초과로 스스로 화면을 닫은 줄. 일반 onScreenStopped보다 먼저 본다
+      if (index($0, "DipoService ] onScreenStopped() mScreenTimeout = true") > 0) return "화면 멈춤(onScreenStopped, 시간 초과)"
       if (index($0, "DipoService ] onScreenStopped()") > 0) return "화면 멈춤(onScreenStopped)"
+      # 1.8.1 S-1(freeze-popups 3-1): 꼬리 "- len"은 프레임 머리, "- body"는 몸통을 받다 끊긴 것(받는 도중 200ms 공백). 휴대폰이 아예 안 보내면 Sender went dead
+      if (index($0, "screen stream timeout") > 0) { v = "?"; if ($0 ~ /screen stream timeout - len *$/) v = "머리"; else if ($0 ~ /screen stream timeout - body *$/) v = "몸통"
+        return "화면 스트림 시간 초과(" v ", screen stream timeout)" }
+      if (index($0, "Sender went dead") > 0) return "휴대폰이 영상을 보내지 않아 멈춤(Sender went dead)"
+      # 1.8.1 S-5(R-5 #578): DiPO 동의 화면. 참거짓 낱말만, 기기 ID 값은 옮기지 않는다(있었는지만).
+      # isAgreementScreen 줄은 정상 차(니로)에서 몇 백 번 "= false"로 나와 그 꼴은 받지 않고 "= true"만 받는다(위 grep)
+      if (index($0, "displayInitPopup mAgreeScreen = ") > 0) { v = word(after("mAgreeScreen = ")); if (v != "true" && v != "false") v = "?"; return "동의 화면 표시(mAgreeScreen " v ")" }
+      if (index($0, "isAgreementScreen() = true") > 0) return "동의 화면 판단 true(isAgreementScreen)"
+      if (index($0, "deviceID is null") > 0) return "저장된 기기 ID 없음(deviceID is null)"
+      if (index($0, "CarPlaySessionScreenTimeout") > 0) return "화면 시간 초과로 세션이 닫음(CarPlaySessionScreenTimeout)"
+      if (index($0, "DipoService ] onScreenTimeout()") > 0) return "화면 시간 초과(onScreenTimeout)"
       if (index($0, "_ScreenTearDown() : wait done") > 0) return "화면 스트림 내림(_ScreenTearDown)"
       if (index($0, "Screen stream stopped") > 0) return "화면 스트림 멈춤"
       if (index($0, "Screen stream started") > 0) return "화면 스트림 시작"
@@ -1541,6 +1650,11 @@ aa_events() {
       if (index($0, "WirelessAlertDialogActivity") > 0 && index($0, "DipoService ] onActivityPause()") > 0) return "휴대폰 연결 안내 창 닫힘"
       if (index($0, "getKeyAction") > 0) { v = $NF; if (v !~ /^[a-z]+$/ || length(v) > 12) return ""; return "★키 동작 " v }
       if (index($0, "ACTION_DOWN keyCode") > 0) return "키 " num($NF) " 누름"
+      return ""
+    }
+    function pop(   v) {
+      if (index($0, "isPopupType = ") > 0) { v = after("isPopupType = "); sub("[^0-9].*", "", v); if (v == "") return ""; return "팝업 종류 " substr(v, 1, 3) }
+      if (index($0, "Action is: com.daudio.app.PhoneProjection.Wireless.") > 0) { v = after("PhoneProjection.Wireless."); sub("[^A-Z_].*", "", v); if (v == "") return ""; return "방송 " substr(v, 1, 30) }
       return ""
     }
     function aas(   v, w) {
@@ -1581,7 +1695,9 @@ aa_events() {
       e = ""; f = ""; p = "안드로이드 오토: "; cp = 0
       sc = 0
       # 정식 F7: 화면 줄(카플레이·AA)은 따로 센다. 소리·AA 단계 줄 한도를 밀어내지 않게
-      if (index($0, "/CarPlay_") > 0 || (index($0, "/TccCarPlay") > 0 && $0 ~ /Modes changed: screen |_ScreenTearDown|Screen stream (started|stopped)|_SetUpStreams/) || (index($0, "/PhoneProjection") > 0 && index($0, "getKeyAction") > 0)) { p = "카플레이 화면: "; e = scr(); sc = 1 }
+      if (index($0, "/CarPlay_") > 0 || (index($0, "/TccCarPlay") > 0 && $0 ~ /Modes changed: screen |_ScreenTearDown|Screen stream (started|stopped)|screen stream timeout|CarPlaySessionScreenTimeout|Sender went dead|_SetUpStreams/) || (index($0, "/PhoneProjection") > 0 && index($0, "getKeyAction") > 0)) { p = "카플레이 화면: "; e = scr(); sc = 1 }
+      # 1.8.1 S-4(R-3 B2-20): 순정 팝업 종류 번호와 방송 이름(화면 줄과 같은 한도로 셈). 숫자 3자리·대문자 밑줄 낱말 30자까지만
+      else if (index($0, "/PhoneProjection") > 0 && $0 ~ /isPopupType = |WirelessPhoneProjectionReceiver Action is: /) { p = "순정 팝업: "; e = pop(); sc = 1 }
       else if (index($0, "/AAProjection") > 0 && $0 ~ /onVideoFocusModeChange|VideoFocusHandler VIDEO_FOCUS_|GalReceiverService : SURFACE_VIEW_|MainActivity : on(Start|Stop|Resume|Pause)$|VideoSink : init/) { p = "AA 화면: "; e = aas(); sc = 1 }
       else if (index($0, "/TccCarPlay") > 0) { p = "카플레이 소리: "; e = cpa(); cp = 1 }
       else if (index($0, "START_SPP_CONNECT_FOR_CONNECTIVITY") > 0) e = "블루투스로 연결 시작(SPP)"
@@ -1600,7 +1716,9 @@ aa_events() {
         e = "헤드유닛 쪽 블루투스(SPP) 다시 연결 거절"; d = sod(tm) - ck; if (ck != "" && d >= 0 && d <= 30) f = "sppfail" }
       else if (index($0, "connectivityConnectionTimeout") > 0) { v = word(after("tryCount[")); e = "폰 프로젝션 연결 시간 초과(시도 " v ")"; if (v + 0 >= 2) f = "giveup" }
       else if (index($0, "isConnectivityActivated return true") > 0) { e = "카플레이 연결 중이라 건너뜀"; f = "cpwait" }
-      else if (index($0, "Connection status STATUS_") > 0) { v = word(after("STATUS_")); e = "폰 Wi-Fi 접속 " v; if (v == "SUCCESS") f = "ok" }
+      # 1.8.1 I-9(#522): 휴대폰이 Wi-Fi에 붙은 것만으로는 "연결됨"(ok)을 내지 않는다(그 뒤 TCP가 막힌 차가 있음). 기다림 안내만 지우고(wjoin),
+      # "AA 연결됨"은 아래 TCP 연결(WifiTransport onConnected) 줄에서만 낸다
+      else if (index($0, "Connection status STATUS_") > 0) { v = word(after("STATUS_")); e = "폰 Wi-Fi 접속 " v; if (v == "SUCCESS") f = "wjoin" }
       else if (index($0, "WifiTransport") > 0 && index($0, "onConnected") > 0) { e = "TCP 연결됨"; f = "ok" }
       else if (index($0, "retry Wireless connection") > 0) e = "Wi-Fi 세션 오류로 한 번 다시 시도"
       else if (index($0, "canStartConnection = false") > 0) e = "연결 시작 막힘(canStartConnection false)"
@@ -1628,6 +1746,8 @@ aa_events() {
       else if (index($0, "AA: timer error ") > 0) { v = after("AA: timer error "); sub(" .*", "", v); gsub("[^A-Za-z0-9._]", "", v); e = "모드 타이머 오류(" substr(v, 1, 60) ")" }
       # 리뷰 M2: 소리 줄은 따로 센다(한 번에 16줄: 세션이 끝날 때 요약이 5줄 나온다). Wi-Fi가 나빠 소리 줄이 몰려도 AA 단계 줄을 한도에서 밀어내지 않게
       # 정식 F7: 화면 줄은 바로 앞 화면 줄과 같으면 세기만 하고(쏟아짐 묶기), 한 회차 SCRMAX줄까지. 넘거나 묶은 줄 수는 끝에 한 줄
+      # 1.8.1 S-3: 화면 시간 초과가 있은 회차는 30초 측정 줄에 scrto=1(perf_tick)
+      if (sc && $0 ~ /screen stream timeout|Sender went dead/) f = "scrto"
       if (e != "" && sc) { if (p e == sl) sd++; else if (ns < smax + 0) { print "E " p e " (" $2 ")"; ns++; sl = p e } else so++ }
       else if (e != "" && cp) { if (nc < 16) { print "E " p e " (" $2 ")"; nc++ } }
       else if (e != "" && n < max + 0) { print "E " p e " (" $2 ")"; n++ }
@@ -1736,14 +1856,33 @@ pf_lap() {
   return 0
 }
 # $1 이름, $2 지금 값: 지난 값과의 차를 _d에 두고(처음·숫자 아님·줄어듦이면 "-") 지금 값을 PF_$1에 기억한다
+# 1.8.1 I-10(#306: 누적 1GB를 넘은 24분 동안 rx=-): 차의 셸(mksh)은 산술도 [ -ge ]도 32비트라 10자리 값은 그대로 다룰 수 없다.
+# 값을 "앞부분 + 끝 9자리"로 나눠 셸에서만 뺀다(awk·프로세스를 띄우지 않음). 끝 9자리 앞에 1을 붙여(1xxxxxxxxx, 2^31보다 작음)
+# 0으로 시작하는 수가 8진으로 읽히지 않게 한다(끝 9자리는 0으로 채워 9자리로 맞춘 뒤 붙임). 앞부분이 2 이상 차이 나면(30초에 1GB 넘게 늘어남) 차를 내지 않는다("-").
+# 앞부분은 9자리까지만 받는다(그 이상은 숫자 아님과 같이 다룸). 줄어들면 "-"
+pf_split() {
+  _ph=0; _pl=$1
+  if [ ${#1} -gt 9 ]; then
+    _pl=${1#${1%?????????}}; _ph=${1%?????????}
+    while :; do case "$_ph" in 0?*) _ph=${_ph#0} ;; *) break ;; esac; done
+  fi
+  while [ ${#_pl} -lt 9 ]; do _pl=0$_pl; done
+  _pl=1$_pl
+  [ ${#_ph} -le 9 ]
+}
 pf_delta() {
   _d=-
   case "$2" in ''|*[!0-9]*) return 0 ;; esac
-  # 리뷰 L3: 차의 셸은 32비트 산술이다. 10자리 이상은 넘칠 수 있어 쓰지 않는다(기억한 값도 지운다)
-  if [ ${#2} -gt 9 ]; then eval "PF_$1="; return 0; fi
   eval "_o=\$PF_$1"
-  [ -n "$_o" ] && [ "$2" -ge "$_o" ] && _d=$(($2 - _o))
   eval "PF_$1=$2"
+  [ -n "$_o" ] || return 0
+  pf_split "$_o" || return 0; _oh=$_ph; _ol=$_pl
+  pf_split "$2" || return 0
+  if [ "$_ph" = "$_oh" ]; then
+    [ "$_pl" -ge "$_ol" ] && _d=$((_pl - _ol))
+  elif [ "$_ph" -gt "$_oh" ] && [ $((_ph - _oh)) = 1 ]; then
+    _d=$((_pl - _ol + 1000000000))
+  fi
   return 0
 }
 # 서비스가 시작할 때 한 번: 표시 줄을 남긴다(지난 부팅·지난 실행의 줄과 구분, 날짜는 여기에만 있다)
@@ -1818,14 +1957,16 @@ perf_tick() {
     done < $PROCNET/dev
   fi
   # UDP 받기 오류·버퍼 넘침(카플레이 소리는 UDP), TCP 재전송(/proc/net/snmp: 이름 줄 다음에 값 줄)
-  _ue=; _ub=; _rt=; _ph=; _hn=
+  # 1.8.1 S-2(freeze-popups 3-1): 영상은 TCP다. 받은 TCP 조각 수(Tcp: InSegs)와 순서 어긋남·중복(TcpExt: TCPOFOQueue·TCPDSACKOldSent·TCPDSACKOfoSent,
+  # /proc/net/netstat)의 변화량으로 Wi-Fi 손실과 휴대폰 멈춤을 가른다. 이름이 없는 커널이면 "-"
+  _ue=; _ub=; _rt=; _ti=; _ph=; _hn=
   if [ -r $PROCNET/snmp ]; then
     while read -r _sk _srest; do
       case "$_sk" in Udp:|Tcp:)
         if [ "$_ph" = "$_sk" ]; then
           set -- $_srest
           for _n in $_hn; do
-            case "$_sk $_n" in "Udp: InErrors") _ue=$1 ;; "Udp: RcvbufErrors") _ub=$1 ;; "Tcp: RetransSegs") _rt=$1 ;; esac
+            case "$_sk $_n" in "Udp: InErrors") _ue=$1 ;; "Udp: RcvbufErrors") _ub=$1 ;; "Tcp: RetransSegs") _rt=$1 ;; "Tcp: InSegs") _ti=$1 ;; esac
             [ $# -gt 0 ] && shift
           done
           _ph=
@@ -1835,7 +1976,25 @@ perf_tick() {
   fi
   pf_delta RP "$_rp"; _rp=$_d; pf_delta RE "$_re"; _re=$_d; pf_delta RD "$_rd"; _rd=$_d
   pf_delta TP "$_tp"; _tp=$_d; pf_delta TE "$_te"; _te=$_d; pf_delta TD "$_td"; _td=$_d
+  _xo=; _xd=; _xf=; _ph=; _hn=
+  if [ -r $PROCNET/netstat ]; then
+    while read -r _sk _srest; do
+      case "$_sk" in TcpExt:)
+        if [ "$_ph" = "$_sk" ]; then
+          set -- $_srest
+          for _n in $_hn; do
+            case "$_n" in TCPOFOQueue) _xo=$1 ;; TCPDSACKOldSent) _xd=$1 ;; TCPDSACKOfoSent) _xf=$1 ;; esac
+            [ $# -gt 0 ] && shift
+          done
+          _ph=
+        else _ph=$_sk; _hn=$_srest; fi ;;
+      esac
+    done < $PROCNET/netstat
+  fi
   pf_delta UE "$_ue"; _ue=$_d; pf_delta UB "$_ub"; _ub=$_d; pf_delta RT "$_rt"; _rt=$_d
+  pf_delta TI "$_ti"; _ti=$_d; pf_delta XO "$_xo"; _xo=$_d; pf_delta XD "$_xd"; _xd=$_d; pf_delta XF "$_xf"; _xf=$_d
+  # 1.8.1 S-3: 이 회차에 화면 시간 초과가 있었으면 줄 끝에 scrto=1(aa_flag가 세운 표시, 붙인 뒤 지움)
+  _pst=; [ "$PF_SCRTO" = 1 ] && { _pst=" scrto=1"; PF_SCRTO=; }
   _pcp=; { read _pcp < $CPN; } 2>/dev/null; case "$_pcp" in ''|*[!0-9]*) _pcp=0 ;; esac
   _pdb=0; [ -f $W/log.pid ] && _pdb=1
   # 시각: aa_events가 이번 점검에서 구한 "하루 안 초"(AA_SOD)를 시:분:초로 바꾼다(date를 또 띄우지 않게). 없으면 "--:--:--"
@@ -1852,7 +2011,7 @@ perf_tick() {
   # 1.8.0 PF-2: 단계별 시간. 셋 다 숫자이고 나머지가 0 이상일 때만 나머지를 낸다
   _ptr=-
   case "$_tk$PF_TW$PF_TA" in ''|*[!0-9]*) ;; *) [ $((_tk - PF_TW - PF_TA)) -ge 0 ] && _ptr=$((_tk - PF_TW - PF_TA)) ;; esac
-  echo "$_ptm up=$_pup load=$_ld cpu=$_cpu io=$_io svc=$_sv tick=$_tk free=$_mf cache=$_mc cp=$_pcp sta=${WSTA:-0} rx=$_rp tx=$_tp rxe=$_re rxd=$_rd txe=$_te txd=$_td udpe=$_ue udpb=$_ub retr=$_rt dbg=$_pdb tick_wifi=${PF_TW:--} tick_aa=${PF_TA:--} tick_rest=$_ptr$_pwd" 2>/dev/null >> $PERF
+  echo "$_ptm up=$_pup load=$_ld cpu=$_cpu io=$_io svc=$_sv tick=$_tk free=$_mf cache=$_mc cp=$_pcp sta=${WSTA:-0} rx=$_rp tx=$_tp rxe=$_re rxd=$_rd txe=$_te txd=$_td udpe=$_ue udpb=$_ub retr=$_rt tin=$_ti ofo=$_xo dsold=$_xd dsofo=$_xf dbg=$_pdb tick_wifi=${PF_TW:--} tick_aa=${PF_TA:--} tick_rest=$_ptr$_pwd$_pst" 2>/dev/null >> $PERF
   PF_N=$((${PF_N:-0} + 1))
   if [ $PF_N -ge $PERF_MAX ]; then
     $BB mv -f $PERF $PERF.1 2>/dev/null || : > $PERF
@@ -2831,9 +2990,9 @@ WIFI_SEEN=${WIFI_SEEN:-$HMGDATA/public/wifi-chip}
 PERMS_OURS=${PERMS_OURS:-$BK/perms.ours}
 MOD_ID=wireless-carplay-aa
 # 패키지에 든 모드 zip의 md5 (busybox 1.8.1에 sha256sum이 없다). zip을 바꾸면 함께 바꾼다.
-MOD_MD5=9b3c93f4927690464185c5e077459ac3
+MOD_MD5=e19ccea88cf08c0c512d76feaf1711e4
 # 패키지에 든 모드의 버전(mod.json "version"). 1.5.7부터 차에 있는 우리 모드가 이것과 다르면 바꾼다(mod_update).
-MOD_VER=2.4.9
+MOD_VER=2.4.10
 # 1.7.1: 토스트는 쓰지 않는다(CLAUDE.md 1장, 소유자 결정 2026-11-08: 너무 빨리 사라져 차에서 읽을 수 없다).
 # 안내는 ap.log("안내: …")와 상태 화면 앱이 읽는 알림 기록 $NOTICE(644, 비밀값 없음)에 남긴다.
 # 알림 기록은 한 줄에 "<시각(초)> <부팅 id> <문구>", 최근 NOTICE_KEEP줄만. 앱은 이번 부팅의 줄만 보인다.
@@ -3983,7 +4142,7 @@ app_installed() { pm path $APP_ID 2>/dev/null | bbx grep -q "^package:"; }
 # 1.7.3(리뷰 M1): 이 패키지에 든 앱의 versionCode(app-src/AndroidManifest.xml과 같아야 함, stub-test가 확인).
 # install_app이 성공하면 $BK/app.vc(업데이트에도 남음)에 이 값을 적는다. 설치된 앱이 이 판인지는 그 기록으로 본다
 # (pm·dumpsys 출력 꼴에 기대지 않음). 업데이트 때 pm install -r이 실패해 옛 판이 남으면 기록이 달라 Launch가 다시 설치한다.
-APK_VC=45
+APK_VC=46
 app_current() { app_installed && [ "$(cat $BK/app.vc 2>/dev/null)" = "$APK_VC" ]; }
 # 마지막 묶음 L1: 같은 판 설치 실패 횟수($BK/app.fail "<판> <횟수>"). 서명이 다른 앱이 깔린 차 등에서 부팅마다 되풀이하지 않게
 # 옛 앱이 있으면 3번에서 멈춘다(그 뒤에도 상태 화면은 옛 앱으로 열린다). 앱이 아예 없으면 화면이 없으므로 지금처럼 부팅마다 한 번 해 본다
@@ -4197,10 +4356,77 @@ dg_block() {
 # 보는 것: NEMESIS 패키지 폴더(다른 차주들이 쓰는 동글 핫스팟 패키지 id), 올라온 다른 USB Wi-Fi 드라이버 이름, 그 패키지가 만드는 인터페이스.
 # 우리 id를 그대로 쓴 개조판은 여기서 가를 수 없고 변조 검사(kp_verify)가 막는다.
 NEMESIS_APPS=${NEMESIS_APPS:-/data/nemesis/apps}
+# --- 1.8.1 W-8: NEMESIS LivePatch 상태 한 줄(형식: drafts/1.8.1-work/n17-upstream.md 1-2절) ---
+# 서비스(root, 마운트 이름공간이 맞음)가 시작할 때 한 번 "nemesis livepatch status"를 읽어 $LPF에 두 줄을 쓴다:
+#   1줄: 상태 화면 문구(상태 파일 lp=, 앱이 그대로 보임), 2줄: 리포트 태그(livepatch=na|err|safe|on …, 영문·숫자만)
+# 출력 꼴: 첫 줄 "wrapper=<0|1> safe=<0|1>", 그다음 줄마다 "<대상 경로> <mounted|farmed|unmounted>". 경로는 옮기지 않고 세기·겹침 종류만 남긴다.
+# 1.17 미만은 명령이 없어 출력이 비고 종료 코드 1 → 해당 없음(na). 그 밖에 첫 줄이 꼴이 아니거나 LPF_WAIT초 안에 끝나지 않으면 err.
+# 셀 때 줄 끝을 고정한다(" mounted$": unmounted가 mounted를 품음). 끝나는 조건: 기다림은 LPF_WAIT번(1초씩)까지, 그 뒤 멈춘다
+LPF=${LPF:-$W/lp}
+LPF_WAIT=${LPF_WAIT:-5}
+lp_probe() {
+  rm -f $LPF.out $LPF.rc $LPF.pid
+  # 리뷰 1 L2: 1.17 미만(버전을 읽을 수 있을 때)은 부르지 않고 해당 없음(1.16이 모르는 명령에 무엇을 내는지 기대지 않음)
+  _lpv=$(nemesis version 2>/dev/null)
+  case "$_lpv" in [0-9]*.[0-9]*) ver_lt "$_lpv" 1.17 && { lp_write "해당 없음" "livepatch=na"; return 0; } ;; esac
+  # 리뷰 1 L1: nemesis 자체의 pid를 남겨, 시간이 넘으면 기다리는 하위 셸과 nemesis를 둘 다 끈다(nemesis가 띄운 자식은 남을 수 있음)
+  ( nemesis livepatch status 2>/dev/null > $LPF.out & echo $! 2>/dev/null > $LPF.pid; wait $!; echo $? 2>/dev/null > $LPF.rc ) &
+  _lpp=$!; _lpw=0
+  # 기다림은 앞에서 sleep(wait를 쓰지 않음: 30초 점검의 wait와 섞이지 않게). 최대 LPF_WAIT초
+  while [ ! -s $LPF.rc ] && [ $_lpw -lt $LPF_WAIT ]; do sleep 1; _lpw=$((_lpw + 1)); done
+  _lprc=; [ -s $LPF.rc ] && read _lprc < $LPF.rc
+  if [ -z "$_lprc" ]; then
+    kill $_lpp 2>/dev/null
+    _lpn=; [ -s $LPF.pid ] && read _lpn < $LPF.pid
+    case "$_lpn" in ''|*[!0-9]*) ;; *) kill $_lpn 2>/dev/null ;; esac
+  fi
+  if [ "$_lprc" = 1 ] && [ ! -s $LPF.out ]; then
+    _lps="해당 없음"; _lpt="livepatch=na"
+  elif [ -z "$_lprc" ]; then
+    _lps="읽지 못함"; _lpt="livepatch=err"
+  else
+    _lpt=$($BB awk '
+      NR == 1 { if ($0 !~ /^wrapper=[01] safe=[01]$/) { bad = 1; exit } w = substr($1, 9); sf = substr($2, 6); next }
+      { r++; if ($0 ~ / mounted$/) m++; else if ($0 ~ / farmed$/) f++; else if ($0 ~ / unmounted$/) u++
+        p = $1
+        if (p ~ /^\/system\/onebin\/[^\/]+\/featurexml\.cfg$/) o1 = 1
+        else if (p ~ /^\/system\/etc\/permissions\/(com\.hkmc\.software\.connectivity\.|android\.hardware\.)/) o2 = 1
+        else if (p ~ /^\/system\/etc\/wifi\/wpa_supplicant[^\/]*\.conf$/) o3 = 1
+        else if (p ~ /^\/system\/app\/(HKMC_DiPO|HKMC_GPM|Iap2ServerApp|HKMC_Navi_ExSL|PhoneProjection|Bluetooth)\.odex$/) o4 = 1
+        else if (p ~ /^\/system\/lib\/(libautoreceiver_infobank\.so|libCarPlay[^\/]*\.so)$/) o5 = 1 }
+      END { if (bad || NR == 0) { print "err"; exit }
+        o = ""; if (o1) o = o ",featurexml"; if (o2) o = o ",permissions"; if (o3) o = o ",wpa"; if (o4) o = o ",app"; if (o5) o = o ",lib"
+        print (sf == 1 ? "safe" : "on") " wrapper=" w " rows=" r + 0 " mounted=" m + 0 " farmed=" f + 0 " unmounted=" u + 0 (o == "" ? "" : " overlap=" substr(o, 2)) }' $LPF.out 2>/dev/null)
+    case "$_lpt" in
+      safe\ *|on\ *)
+        set -- $_lpt; _lpk=$1; _lpr=${3#rows=}; _lpm=${4#mounted=}; _lpf=${5#farmed=}; _lpo=${7#overlap=}
+        if [ "$_lpk" = safe ]; then _lps="안전 모드(순정으로 시작함)"
+        elif [ "$_lpr" = 0 ]; then _lps="쓰는 패키지 없음"
+        elif [ $((_lpm + _lpf)) = 0 ]; then _lps="적용된 곳 없음(안전 모드나 손상)"
+        else _lps="사용 중(적용 $((_lpm + _lpf))곳)"; fi
+        if [ -n "$7" ]; then
+          _lpn=
+          for _lpx in featurexml:"무선 기능 파일" permissions:"권한 파일" wpa:"Wi-Fi 설정 파일" app:"순정 앱" lib:"순정 라이브러리"; do
+            case ",$_lpo," in *",${_lpx%%:*},"*) _lpn="$_lpn·${_lpx#*:}" ;; esac
+          done
+          _lps="$_lps, 겹침: ${_lpn#·}"
+        fi
+        _lpt="livepatch=$_lpt" ;;
+      *) _lps="읽지 못함"; _lpt="livepatch=err" ;;
+    esac
+  fi
+  rm -f $LPF.out $LPF.rc $LPF.pid
+  lp_write "$_lps" "$_lpt"
+  return 0
+}
+# 두 줄(화면 문구, 리포트 태그)을 $LPF에
+lp_write() { { echo "$1"; echo "$2"; } 2>/dev/null > $LPF.tmp && $BB mv -f $LPF.tmp $LPF 2>/dev/null; return 0; }
 DG_OTHER_PKGS='usbwifi.hotspot stock.hotspot'
 DG_OTHER_MODS='8812au 88XXau 8821au 8821cu 8814au rtl8812au rtl8821cu rtl88x2bu rtl8xxxu r8188eu 8188eu mt7601u'
 DG_OTHER_IFS='rtwlan0'
 DG_OTHERPKG_MSG="다른 동글 패키지가 있어 동글을 쓰지 않습니다. 그 패키지를 지운 뒤 재부팅해 주세요."
+# 1.8.1 I-7: 우리가 올리지 않은 동글 드라이버(같은 이름)가 이미 올라와 있음(다른 패키지 이름은 못 찾음). 문구는 다른 패키지 안내와 같은 줄기
+DG_OTHERMOD_MSG="다른 프로그램이 동글 드라이버를 먼저 올려 동글을 쓰지 않습니다. 그 패키지를 지운 뒤 재부팅해 주세요."
 # 찾으면 DG_OTHER에 이름(패키지 id·드라이버·인터페이스 이름)을 두고 0
 dg_otherpkg() {
   DG_OTHER=
@@ -5547,6 +5773,9 @@ DG_BOOT0F=${DG_BOOT0F:-$BK/dongle.boot0}
 DG_GONE2_MSG="동글이 보이지 않습니다. 다시 꽂거나, 동글 사용을 끄면 다음 시동부터 내비 Wi-Fi로 돌아갑니다."
 DG_NOBIND_MSG="동글이 꽂혀 있지만 쓸 수 없습니다. 동글 사용을 끄면 다음 시동부터 내비 Wi-Fi로 돌아갑니다."
 DG_BCMUP_MSG="내비 Wi-Fi가 먼저 켜져 이번에는 동글을 쓰지 않았습니다. 다음 시동 때 다시 시도합니다."
+# 1.8.1 I-8(#594 모하비 HM22): bcmup인데 내비 Wi-Fi로도 우리 핫스팟이 뜨지 않은 차(상태 화면 판정 dg_verdict만 씀).
+# 예전에는 판정이 apoff("3분 후 재부팅")로 떨어져 차주가 재부팅만 되풀이했다. 재부팅을 권하지 않고 제보를 부탁한다
+DG_BCMUP_NOAP_MSG="내비 Wi-Fi가 먼저 켜져 동글을 쓰지 못했고 핫스팟도 꺼져 있습니다. 다음 시동에도 같으면 제보해 주세요."
 DG_FAILBOOT_MSG="동글 드라이버를 올리지 못해 이번에는 내비 Wi-Fi를 씁니다. 다음 시동 때 다시 시도합니다."
 DG_PLUGTO_MSG="동글이 꽂히지 않아 이번에는 내비 Wi-Fi를 씁니다. 다음 시동 때 다시 시도합니다."
 DG_NOAP_MSG="동글로 핫스팟을 띄우지 못했습니다. 다음 시동 때 다시 시도하며, 동글 사용을 끄면 다음 시동부터 내비 Wi-Fi로 돌아갑니다."
@@ -5763,9 +5992,11 @@ dg_start() {
     else dg_to_builtin failboot "이번 부팅에 올린 동글 드라이버가 사라짐"; fi
     return 0
   fi
-  if dg_present; then dg_guard_release; DG_ST=other; dg_state other; log "동글 드라이버: $DG_MOD가 이미 목록에 있음(우리가 올린 것 아님), 건드리지 않음"; return 0; fi
-  # DG-8: 다른 동글 패키지가 있으면 시작하지 않음
+  # DG-8: 다른 동글 패키지가 있으면 시작하지 않음.
+  # 1.8.1 I-7(#609 NX4·#612 DL3HEV22): 남의 패키지가 우리와 같은 이름의 드라이버(88x2bu)를 이미 올린 차는 예전에 아래 dg_present에서
+  # other로 끝나 "다른 동글 패키지" 안내가 나오지 않았다(차주는 부품 없음만 봄). 다른 패키지 감지를 먼저 본다
   if dg_otherpkg; then dg_guard_release; DG_ST=otherpkg; dg_state otherpkg "$DG_OTHER"; log "동글: 다른 동글 패키지·드라이버($DG_OTHER)가 있어 쓰지 않음"; return 0; fi
+  if dg_present; then dg_guard_release; DG_ST=other; dg_state other; log "동글 드라이버: $DG_MOD가 이미 목록에 있음(우리가 올린 것 아님), 건드리지 않음"; return 0; fi
   # DG-3: 허용한 동글이 꽂혀 있을 때만 올린다(없으면 올리지 않음, 동글을 꽂고 재부팅)
   dg_usb
   # 시험판 5: 부팅 때 동글이 없어도 동글 길을 탄다(드라이버를 먼저 올리고 "지금 동글을 꽂으세요", 허용 확인은 꽂은 뒤 dg_ident_tick)
@@ -6484,6 +6715,7 @@ dg_kv() {
     blocked) _dgl=2; _dgm=$DG_BLOCK_MSG ;;
     nosoc|nodrv) _dgl=1; _dgm=$DG_NOSUP_MSG ;;
     otherpkg) _dgl=1; _dgm=$DG_OTHERPKG_MSG ;;
+    other) _dgl=1; _dgm=$DG_OTHERMOD_MSG ;;
     builtinbusy) _dgl=1; _dgm=$DG_BUSY_MSG ;;
     usbadb) _dgl=1; _dgm=$DG_USBADB_MSG ;;
     nodongle) _dgl=1; _dgm=$DG_NODONGLE_MSG ;;
@@ -6573,6 +6805,8 @@ main() {
   aplog_open
   # C4: 지난 실행이 남긴 앱 응답 파일(값이 들어 있음)을 지운다
   apcfg_rm
+  # 1.8.1 I-1(설계 리뷰 2): 지난 실행이 남긴 우리 방화벽 체인을 먼저 뺀다(순정 AP 길·대기 길은 stop_ap보다 먼저 돈다)
+  fw_aa_down
   # 1.8.0 변조 검사: 무엇이든 바꾸기 전에 본다. 다르면 진행 기록에 실패 문구를 쓰고 멈춘 채 기다린다(mode=restart가 다시 띄우지 않게 끝내지 않음)
   # 리뷰 중간 2: 지난 부팅의 결과를 먼저 지운다($W는 재부팅해도 남음). 업데이트 중 파일을 다 풀기 전처럼 잠깐 맞지 않을 수 있어
   # 30초 간격으로 KP_VERIFY_TRIES번(기본 4번, 약 2분)까지 다시 본 뒤에 판정한다. 끝나는 조건: 맞음 또는 횟수
@@ -6754,6 +6988,7 @@ main() {
   logstart
   up
   aa_sig
+  fw_aa_sync
   rm -f $CPN
   wifi_events; aa_events; cp_watch
   hint_tick
@@ -6765,6 +7000,8 @@ main() {
   fi
   # 1.7.2(P-7): 우리 핫스팟을 켠 뒤에 순정 AP 저장값을 맞춘다(settings가 몇 초 걸려도 핫스팟은 이미 켜져 있음)
   apon_off
+  # 1.8.1 W-8: NEMESIS LivePatch 상태를 한 번 읽는다(핫스팟을 켠 뒤라 늦어져도 연결에 영향 없음, 최대 LPF_WAIT초)
+  lp_probe
   n=0
   while true; do
     # 시험판 6(F3): 뽑기 감시가 동글이 다시 잡힌 것을 보면 이 쉬기를 깨운다(dg_wake). pid와 부팅 id를 남긴다(동글 길 부팅만).
@@ -6792,6 +7029,7 @@ main() {
     ap_src_retry
     up
     aa_sig
+    fw_aa_sync
     pf_mark; wifi_events; pf_lap TW; aa_events; pf_lap TA; cp_watch
     hint_tick
     # 베타 3(B3-4): 상태 화면을 연 동안(감시자가 살아 있음)은 30초마다 한 번 상태 파일을 새로 씀(판정이 바뀐 것을 잡게)

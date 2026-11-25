@@ -330,7 +330,7 @@ STOCK_HOSTAPD=${STOCK_HOSTAPD:-/system/bin/hostapd}
 # 베타 2(조사 문서 9-3 진단, 소유자 승인 11-20): 순정 방화벽이 wlan0을 막는가. iptables -S를 awk로 읽어 예/아니요만 낸다
 # (규칙 줄 내용·주소는 셸 변수에도 담지 않음). 순정 체인 WL_WLAN0_IN이 있는가, 거기에 카플레이 포트 7000(또는 모든 입력)이 열려 있는가.
 # 명령이 없거나 권한이 없어 아무 줄도 못 읽으면 "확인 못 함"
-# iptables 읽기는 이 한 곳(-S로 읽기만). 아래 두 판정 함수가 쓴다
+# iptables 읽기는 이 한 곳(-S로 읽기만). 아래 판정 함수들이 쓴다(1.8.1 I-1: 쓰기는 서비스 hotspot.sh fw_aa_sync·fw_aa_down에만 있다)
 fw_ipt() { ${IPTABLES:-iptables} -S 2>/dev/null; }
 fw_wlan0() {
   _fwo=$(fw_ipt | $BB awk '
@@ -366,6 +366,23 @@ fw_aa() {
     ynn) echo "순정 체인 예, 40515 막힘(무선 안드로이드 오토를 막을 수 있음)" ;;
     n??) echo "순정 체인 아니요" ;;
     *) echo "확인 못 함" ;;
+  esac
+}
+# 1.8.1 I-1: 서비스가 넣는 우리 체인(KP_AA_IN) 상태. 예/아니요 꼴만(규칙 줄·주소는 남기지 않음)
+fw_kp() {
+  _fwk=$(fw_ipt | $BB awk -v ch=KP_AA_IN '
+    { n++ }
+    $1 == "-P" && $2 == "INPUT" && $3 == "DROP" { d = 1 }
+    $1 == "-N" && $2 == ch { c = 1 }
+    $1 == "-A" && $2 == "INPUT" && $(NF - 1) == "-j" && $NF == ch { j = 1 }
+    $1 == "-A" && $2 == ch { k++; if ($0 ~ / --dport 40515 / && $0 ~ / -j ACCEPT$/) r++ }
+    END { if (n == 0) print "x"; else print (d ? "d" : "-") (c ? "c" : "-") (j ? "j" : "-") ((k == 1 && r == 1) ? "r" : "-") }' 2>/dev/null)
+  case "$_fwk" in
+    ?cjr) echo "있음(우리 AP 대역의 무선 안드로이드 오토 포트만 허용)" ;;
+    d---) echo "없음(우리 핫스팟이 꺼져 있거나 아직 넣기 전)" ;;
+    ----) echo "없음(방화벽 없는 차라 넣지 않음)" ;;
+    x) echo "확인 못 함" ;;
+    *) echo "일부만 있음(다음 점검에 다시 맞춤)" ;;
   esac
 }
 dn_safe() { $BB awk '{ gsub(/[^A-Za-z0-9 ._:\/()+=,#-]/, ""); print substr($0, 1, 80) }' 2>/dev/null; }
@@ -1119,9 +1136,12 @@ report() {
     for _f in automap.bad automap.checked automap.foreign; do [ -f $BK/$_f ] && echo "  - 기록: $_f"; done
   else echo "- 확인된 차: 아니요 (서비스가 대기만 함, 지원 차: $CARS)"; fi
   echo "- NEMESIS: $(nemesis version 2>/dev/null)"
+  echo "- NEMESIS LivePatch: $(lp_state s) ($(lp_state t))"
   # 따옴표 없이: 두 줄이 한 줄로 합쳐진다
   echo "- HMG-API:" $($BB grep -E '^(version|build) ' ${HMGINST:-/data/hmgapi/installed.txt} 2>/dev/null)
   echo "- wireless.projection 설치: $(yn [ -d /data/nemesis/apps/wireless.projection ])"
+  echo "- 예전 wireless.projection 흔적(백업 폴더만 남음): $(yn wp_trace)"
+  if tbt_other; then echo "- 같은 기능의 다른 패키지·모드: **$TBT_OTHER** ($TBT_CONFLICT_MSG)"; else echo "- 같은 기능의 다른 패키지·모드: 없음"; fi
   echo "- HMG-API 무선 모드: 설치 $(mod_state) / 켜짐 $(mod_on_state) / 무선 카플레이 설정(bridge) $(bridge_state)"
   echo "- 무선 모드 판: 차 $(mod_ver) / 패키지 $MOD_VER"
   # 1.8.0 정식(P2): 우리가 설치·업데이트할 때 남긴 mod.json 기록과 지금이 같은가(기록만, 판정에는 쓰지 않음). 버전 숫자만
@@ -1178,6 +1198,7 @@ report() {
   echo "- 순정 hostapd: $(yn [ -x /system/bin/hostapd ]), dnsmasq: $(yn [ -x /system/bin/dnsmasq ])"
   echo "- 순정 방화벽(wlan0): $(fw_wlan0)"
   echo "- 순정 방화벽 무선 안드로이드 오토 포트(40515): $(fw_aa)"
+  echo "- 우리 AA 방화벽 규칙(KP_AA_IN): $(fw_kp)"
   echo "- Wi-Fi 설정(wifi_on): $(settings get global wifi_on 2>/dev/null), 순정 AP 저장값(wifi_ap_on): $(settings get global wifi_ap_on 2>/dev/null)"
   # 1.7.2(P-7): 서비스가 wifi_ap_on을 1에서 0으로 바꾼 기록(원래 값, 숫자만). 없으면 바꾼 적 없음(또는 되돌림)
   _apo=$(cat $APON_ORIG 2>/dev/null); case "$_apo" in ''|*[!0-9]*) _apo=없음 ;; esac
@@ -1258,7 +1279,7 @@ yesno() { if "$@" >/dev/null 2>&1; then echo yes; else echo no; fi; }
 # 1.8.0 변조 검사: 상태 화면 판정용(빠르게). 서비스가 남긴 결과가 bad이거나 목록 파일이 없으면 변조로 본다
 # 베타 3(B3-13, 메인 결정 11-23): 이 빌드가 실제로 쓰는 package-version 하나와 변조 검사 목록 줄 수. 승격 빌드 때 그 빌드 값으로 바꾼다
 # (stub가 NEMESIS.data·목록과 같은지 본다). 다르면 리포트에 "공식 버전 아님"(설치·동작은 막지 않음, 표시만)
-KP_OFFICIAL_VERS="1.8.0"
+KP_OFFICIAL_VERS="1.8.1"
 KP_OFFICIAL_FILES=73
 kp_official_line() {
   _kov=$(pver $APP/NEMESIS.data); _kof=$($BB awk 'END { print NR + 0 }' ${KPLIST:-$APP/bin/kp-files.md5} 2>/dev/null)
@@ -1326,6 +1347,44 @@ kp_tampered() {
 HMGMOD=${HMGMOD:-/data/hmgapi/mods/wireless-carplay-aa}
 HMGSET=${HMGSET:-/data/hmgapi/settings/wireless-carplay-aa.json}
 mod_state() { yesno [ -f $HMGMOD/mod.json ]; }
+# 1.8.1 T1-2(#613 NEEV·#616 CN7NPE): 우리와 같은 기능(계기판 길안내 등)을 하는 다른 것이 켜져 있으면 상태 화면 "먼저 할 일"과 리포트에 한 줄.
+# 감지는 알려진 id 목록으로만 한다(소유자 결정 Y-2): HMG-API 모드는 mod.json이 있고 꺼 두지 않음(.disabled 없음), NEMESIS 패키지는 폴더가 있음.
+# NEMESIS 패키지 둘은 NEMESIS.data depends로도 막는다(W-1). 이 줄은 우리를 먼저 깔고 그 패키지를 나중에 깐 차를 위한 것이다.
+# 끄거나 지우는 도구는 만들지 않는다. wireless.projection은 따로 판정(otherpkg)이 있어 여기에 넣지 않는다
+TBT_OTHER_MODS='wired-carplay-tbt-lx2pe'
+TBT_OTHER_PKGS='projection.tbt enhanced.projection'
+TBT_CONFLICT_MSG="타 패키지와 기능이 충돌됩니다. 기능이 똑같은 패키지를 삭제하십시오."
+# 찾으면 TBT_OTHER에 id(공백으로 나눔)를 두고 0
+tbt_other() {
+  TBT_OTHER=
+  for _to in $TBT_OTHER_MODS; do
+    [ -f ${HMGDATA:-/data/hmgapi}/mods/$_to/mod.json ] && [ ! -f ${HMGDATA:-/data/hmgapi}/mods/$_to/.disabled ] && TBT_OTHER="$TBT_OTHER $_to"
+  done
+  for _to in $TBT_OTHER_PKGS; do [ -d ${NEMESIS_APPS:-/data/nemesis/apps}/$_to ] && TBT_OTHER="$TBT_OTHER $_to"; done
+  TBT_OTHER=${TBT_OTHER# }
+  [ -n "$TBT_OTHER" ]
+}
+# 1.8.1 W-2(리뷰 1 H1로 바꿈): 예전 무선 패키지 wireless.projection(1.x, /system을 직접 고침)을 지운 흔적(백업 폴더)이 남았는가.
+# NEMESIS는 업데이트 때 옛 판의 preuninstall·폴더 삭제를 새 판의 preinstall보다 먼저 한다(pkg.c, 1.16.9·1.17 같음). 그래서 설치 전 검사로
+# 막으면 업데이트가 옛 판만 지운 채 끝나 무선 프로젝션이 다 안 되는 차가 생긴다. 막지 않고 상태 화면·리포트에 이유만 보인다.
+# 그 패키지가 아직 깔려 있으면 NEMESIS.data depends(!wireless.projection)가 설치·업데이트를 처음에 막는다(옛 판을 지우기 전)
+WP_TRACE=${WP_TRACE:-/data/nemesis/backup/wireless.projection}
+WP_TRACE_MSG="예전 wireless.projection의 흔적이 남아 있습니다. 그 패키지 안내대로 정리해 주세요."
+wp_trace() { [ -d $WP_TRACE ] && [ ! -d ${NEMESIS_APPS:-/data/nemesis/apps}/wireless.projection ]; }
+# 1.8.1 W-8: NEMESIS LivePatch 상태 한 줄. 서비스(hotspot.sh lp_probe)가 시작할 때 한 번 읽어 $LPF에 둔 두 줄(화면 문구·리포트 태그)을 옮긴다.
+# 여기서는 nemesis를 부르지 않는다(상태 화면을 열 때 다시 읽지 않음). 정한 꼴이 아니면 옮기지 않는다. $1=s(화면 문구) 또는 t(리포트 태그)
+lp_state() {
+  _lps=; _lpt=; [ -s $LPF ] && { read -r _lps; read -r _lpt; } < $LPF 2>/dev/null
+  # 태그: 정한 낱말로 시작하고 영문 소문자·숫자·=·쉼표·빈칸만
+  case "$_lpt" in livepatch=na|livepatch=err|"livepatch=safe wrapper="*|"livepatch=on wrapper="*) ;; *) _lpt= ;; esac
+  case "$_lpt" in *[!a-z0-9=,\ ]*) _lpt= ;; esac
+  # 문구: 서비스가 쓰는 꼴로 시작할 때만(busybox 1.8.1 awk에 한글 범위를 맡기지 않고 셸 case로 본다), 120자까지
+  case "$_lps" in "해당 없음"|"읽지 못함"|"안전 모드(순정으로 시작함)"*|"쓰는 패키지 없음"*|"적용된 곳 없음(안전 모드나 손상)"*|"사용 중(적용 "*) ;; *) _lps= ;; esac
+  [ ${#_lps} -le 120 ] || _lps=
+  if [ ! -s $LPF ]; then _lps="기록 없음(서비스 시작 전)"; _lpt="livepatch=-"
+  elif [ -z "$_lps" ] || [ -z "$_lpt" ]; then _lps="읽지 못함"; _lpt="livepatch=-"; fi
+  if [ "$1" = t ]; then echo "$_lpt"; else echo "$_lps"; fi
+}
 # mod_on은 "꺼 두지 않았다"는 뜻일 뿐이다. HMG-API가 충돌·미지원으로 건너뛴 경우는 훅·무선 기능 값으로 드러난다.
 # bridge는 저장된 설정 값이라 Apply changes 전에는 실제 동작과 다를 수 있다.
 mod_on_state() { if [ -f $HMGMOD/mod.json ] && [ ! -f $HMGMOD/.disabled ]; then echo yes; else echo no; fi; }
@@ -1475,12 +1534,19 @@ dg_verdict() {
   case "$_dgvs" in
     bootwait|wait|noap|nodevstuck|nobind|notours|reupmax) ;;
     up|ok) [ "$K_OURAP" = no ] && [ "$_vconn" = no ] || return 1 ;;
+    # 1.8.1 I-7·I-8: 다른 동글 패키지·드라이버(otherpkg·other), 내비 Wi-Fi가 먼저 켜짐(bcmup)인데 우리 핫스팟이 없고 연결도 없으면
+    # 부품 없음(nopart)·핫스팟 꺼짐(apoff, "3분 후 재부팅")보다 동글 문구를 먼저 보인다. 핫스팟이 떠 있거나 연결 중이거나
+    # 순정 Wi-Fi 차(ap_mode=stock, 우리 핫스팟을 띄우지 않음)면 예전 판정 그대로
+    other|otherpkg|bcmup) [ "$K_OURAP" = no ] && [ "$_vconn" = no ] && [ "$K_APMODE" != stock ] || return 1 ;;
     *) return 1 ;;
   esac
   _dgvk=$(dg_kv)
   DGV_LV=$(echo "$_dgvk" | $BB awk -F= '$1 == "dongle_lv" { print $2; exit }')
   DGV_MSG=$(echo "$_dgvk" | $BB awk '/^dongle_msg=/ { sub(/^dongle_msg=/, ""); print; exit }')
   case "$DGV_LV" in 0|1|2) ;; *) DGV_LV=1 ;; esac
+  # 1.8.1 I-8: bcmup 문구("다음 시동 때 다시 시도")는 내비 Wi-Fi가 되는 차의 말이다. 여기 온 차는 핫스팟도 꺼져 있다
+  # (이 부팅에 순정 드라이버를 내린 차는 dg_kv가 이미 재부팅 문구를 줬으므로 그대로 둔다)
+  [ "$_dgvs" = bcmup ] && [ "$DGV_MSG" = "$DG_BCMUP_MSG" ] && DGV_MSG=$DG_BCMUP_NOAP_MSG
   [ -n "$DGV_MSG" ] || { DGV_MSG=$DG_APUP_MSG; DGV_LV=1; }
   return 0
 }
@@ -1665,6 +1731,13 @@ kp_verdict() {
       *) V_FIRST="먼저 할 일: NEMESIS의 무선 ADB를 꺼 주세요."; V_FIRST_LV=1 ;;
     esac
   fi
+  # 1.8.1 W-2(리뷰 1 H1): 예전 wireless.projection 흔적은 막지 않고 "먼저 할 일"로만(다른 먼저 할 일이 없고, 연결·설치 중이 아닐 때)
+  if [ -z "$V_FIRST" ] && wp_trace; then
+    case "$V_CODE" in connected|newconnected|installing|tampered) ;; *) V_FIRST="먼저 할 일: $WP_TRACE_MSG"; V_FIRST_LV=1 ;; esac
+  fi
+  # 1.8.1 T1-2: 같은 기능의 다른 패키지·모드가 켜져 있으면 다른 "먼저 할 일"보다 앞에(연결 중에도 보임: 연결돼도 계기판 길안내가 다툼).
+  # 아래 USB ADB 안내만 이보다 앞선다(USB가 막히면 다른 것을 확인할 수 없음). 문구는 소유자 결정(Y-1) 그대로
+  if tbt_other; then V_FIRST=$TBT_CONFLICT_MSG; V_FIRST_LV=1; fi
   # NM-2: USB ADB가 켜져 있으면(USB 포트가 기기 모드라 USB·유선 카플레이·동글을 못 씀) 다른 "먼저 할 일"보다 앞에 둔다. 연결 중·설치 중에도
   # 보인다(USB 리포트·유선 카플레이를 못 쓰므로). NEMESIS가 켰다는 표시(adb_usb_prev)가 있을 때만 "NEMESIS의"라고 쓴다. 판정·동작은 그대로(문구만)
   if usb_adb_on; then
@@ -1721,6 +1794,8 @@ status_kv() {
   car_in "$K_PROD" "$CARS" && echo "tested=yes" || echo "tested=no"
   echo "hmgapi=$K_HMG"
   echo "nemesis=$K_NEM"
+  # 1.8.1 W-8: NEMESIS LivePatch 한 줄(서비스가 시작할 때 읽은 것, 앱이 그대로 보임)
+  echo "lp=$(lp_state s)"
   echo "wp=$(yesno [ -d /data/nemesis/apps/wireless.projection ])"
   echo "mod=$K_MOD"
   echo "modver=$(mod_ver)"
