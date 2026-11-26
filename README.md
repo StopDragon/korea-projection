@@ -8,15 +8,9 @@
 >
 > [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-%ED%9B%84%EC%9B%90%ED%95%98%EA%B8%B0-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/StopDragon)
 
-### 후원해 주신 분
-<!-- sponsors -->
-- [RYUEK97님](https://github.com/RYUEK97) (GitHub Sponsors)
-- [Yoo JiSang님](https://github.com/SpiritLink) (GitHub Sponsors)<!-- sponsors -->
-- 아이리어펠님 - 야밤에 출출할때 먹기 좋은 맥도날드 교환권
-- RYUEK님 - 비오늘 날 너무 맛있게 먹으면서 개발했습니다, 뿌링클콤보와 콜라
-- 부르릉님 - 스타벅스 커피 2잔과 생크림 카스테라
-- Brant님 - 스타벅스 커피 2잔과 누텔라바게트 소금빵
-- 전기차좋아님 - 마라샹궈 사먹어야지, 배민 교환권
+### 후원해 주신 분 💖
+
+아이리어펠님 · Brant님 · 전기차좋아님 · 9c님 · 춘삼님 · 루넨님 · 녹미님 · 부르릉님<!-- sponsors --> · [RYUEK97님](https://github.com/RYUEK97) · [Yoo JiSang님](https://github.com/SpiritLink)<!-- sponsors -->
 
 한국 현대·기아 내비(Gen5W 헤드유닛)에서 **무선 카플레이**와 **무선 안드로이드 오토**를 쓸 수 있게 해 주는 NEMESIS 패키지입니다.
 
