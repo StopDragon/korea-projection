@@ -12,6 +12,8 @@
 
 아이리어펠님 · Brant님 · 전기차좋아님 · 9c님 · 춘삼님 · 루넨님 · 녹미님 · 부르릉님<!-- sponsors --> · [RYUEK97님](https://github.com/RYUEK97) · [Yoo JiSang님](https://github.com/SpiritLink)<!-- sponsors -->
 
+<br>
+
 한국 현대·기아 내비(Gen5W 헤드유닛)에서 **무선 카플레이**와 **무선 안드로이드 오토**를 쓸 수 있게 해 주는 NEMESIS 패키지입니다.
 
 - 한국 5W 펌웨어에서는 wifi 모듈을 사용할 수 없어 무선 카플레이 혹은 무선 안드로이드 오토를 무선으로 사용할 수 없습니다.
