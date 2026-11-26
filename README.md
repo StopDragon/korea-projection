@@ -9,7 +9,9 @@
 > [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-%ED%9B%84%EC%9B%90%ED%95%98%EA%B8%B0-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/StopDragon)
 
 ### 후원해 주신 분
-<!-- sponsors --><!-- sponsors -->
+<!-- sponsors -->
+- [RYUEK97님](https://github.com/RYUEK97) (GitHub Sponsors)
+- [Yoo JiSang님](https://github.com/SpiritLink) (GitHub Sponsors)<!-- sponsors -->
 - 아이리어펠님 - 야밤에 출출할때 먹기 좋은 맥도날드 교환권
 - RYUEK님 - 비오늘 날 너무 맛있게 먹으면서 개발했습니다, 뿌링클콤보와 콜라
 - 부르릉님 - 스타벅스 커피 2잔과 생크림 카스테라
