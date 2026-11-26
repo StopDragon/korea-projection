@@ -1,0 +1,44 @@
+# README "후원해 주신 분" 칸의 GitHub Sponsors 후원자 이름을 하루 한 번 갱신한다.
+# 고치는 곳은 README의 <!-- sponsors --> 표시 사이뿐이다. 직접 적은 후원자 줄은 건드리지 않는다.
+# 공개를 고른 후원자만 이름이 나온다(비공개 후원자는 나오지 않음).
+# 필요한 것: 저장소 Secrets의 SPONSORS_TOKEN(후원을 받는 계정에서 만든 읽기 전용 토큰, read:user·read:org 권한).
+name: 후원자 목록 갱신
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 매일 03:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sponsors-readme
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: JamesIves/github-sponsors-readme-action@02650b8cd445fc16dfef73195f9c406dce041623 # v1.6.1
+        with:
+          token: ${{ secrets.SPONSORS_TOKEN }}
+          file: README.md
+          # 이름이 비어 있는 후원자는 GitHub 아이디로 보인다
+          # 줄마다 앞에 줄바꿈을 두어 표시(<!-- sponsors -->) 뒤에서 목록이 새 줄로 시작하게 한다
+          template: "\n- [{{#name}}{{ name }}{{/name}}{{^name}}{{ login }}{{/name}}님]({{ url }}) (GitHub Sponsors)"
+
+      - name: 바뀐 것이 있으면 올리기
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "후원자 목록이 바뀌지 않았습니다."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "README: 후원자 목록 갱신"
+          git push
